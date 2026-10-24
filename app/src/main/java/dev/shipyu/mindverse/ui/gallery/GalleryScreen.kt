@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,7 +49,17 @@ fun GalleryScreen(
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) { controller.refresh() }
+    // Refresh on open, then keep polling briefly while captures are still
+    // processing — a fresh clipboard/share capture shows as pending first and
+    // becomes a card once the pipeline finishes (no manual reopen needed).
+    LaunchedEffect(Unit) {
+        controller.refresh()
+        repeat(5) {
+            kotlinx.coroutines.delay(3_000)
+            if (controller.state.value.pending.isEmpty()) return@LaunchedEffect
+            controller.refresh()
+        }
+    }
 
     Surface(modifier = modifier.fillMaxSize()) {
         LazyVerticalStaggeredGrid(
@@ -167,7 +178,7 @@ private fun NearDupSection(
     }
 }
 
-/** Masonry tile: image-only when a thumbnail exists, title-only otherwise. */
+/** Masonry tile: image-only when a thumbnail exists, square title tile otherwise. */
 @Composable
 private fun MasonryTile(card: GalleryCard, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
@@ -184,11 +195,15 @@ private fun MasonryTile(card: GalleryCard, onClick: () -> Unit) {
                 placeholder = "",
             )
         } else {
-            Box(modifier = Modifier.padding(12.dp)) {
+            Box(
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(12.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
                 Text(
                     text = card.title,
                     style = MaterialTheme.typography.titleSmall,
-                    maxLines = 3,
+                    maxLines = 4,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
         }
@@ -202,12 +217,19 @@ private fun PendingTile(capture: CaptureEntity) {
         if (blob != null) {
             BlobThumbnail(
                 path = blob,
-                modifier = Modifier.fillMaxWidth().height(140.dp),
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                 placeholder = "",
             )
         } else {
-            Box(modifier = Modifier.padding(12.dp)) {
-                Text(text = "…", style = MaterialTheme.typography.titleSmall)
+            Box(
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(12.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Text(
+                    text = "Saving…",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
