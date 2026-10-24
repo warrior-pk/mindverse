@@ -25,6 +25,7 @@ class GalleryController(
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val scope: CoroutineScope,
     private val importer: dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter? = null,
+    private val watcherSettings: dev.shipyu.mindverse.triggers.screenshot.WatcherSettings? = null,
 ) {
     private val _state = MutableStateFlow(GalleryState())
     val state: StateFlow<GalleryState> = _state.asStateFlow()
@@ -37,6 +38,16 @@ class GalleryController(
     }
 
     suspend fun refresh() {
+        // Auto-add (opt-in): if the user enabled auto-ingest, pull the latest
+        // Screenshots on every Gallery open so a screenshot taken in another app
+        // appears without tapping Import (ScreenCaptureCallback is visible-only).
+        try {
+            if (watcherSettings?.isAutoIngestEnabled() == true) {
+                importer?.importLatest(5)
+            }
+        } catch (_: Exception) {
+            // Best-effort: a failed auto-import must never block the Gallery.
+        }
         val captures = db.captureDao().listActive()
         val capturesById = captures.associateBy { it.id }
         val memories = repository.listActive()

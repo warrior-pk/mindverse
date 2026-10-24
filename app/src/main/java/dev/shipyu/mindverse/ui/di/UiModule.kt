@@ -40,7 +40,8 @@ object UiModule {
         zone: ZoneId,
         @Named("ui") scope: CoroutineScope,
         importer: dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter,
-    ): GalleryController = GalleryController(db, repository, clock, zone, scope, importer)
+        watcherSettings: dev.shipyu.mindverse.triggers.screenshot.WatcherSettings,
+    ): GalleryController = GalleryController(db, repository, clock, zone, scope, importer, watcherSettings)
 
     @Provides
     @Singleton
