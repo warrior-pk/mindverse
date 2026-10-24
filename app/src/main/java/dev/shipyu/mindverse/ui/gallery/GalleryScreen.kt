@@ -178,31 +178,32 @@ private fun NearDupSection(
     }
 }
 
-/** Masonry tile: image-only when a thumbnail exists, square title tile otherwise. */
+/** Masonry tile: tall image tile, or tall title tile (1:2–1:4 w:h). */
 @Composable
 private fun MasonryTile(card: GalleryCard, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        // Tall-tile rhythm: width:height between 1:2 and 1:4 by id hash.
+        val ratio = when ((card.memoryId.hashCode() and Int.MAX_VALUE) % 4) {
+            0 -> 1f / 2f
+            1 -> 1f / 2.75f
+            2 -> 1f / 3.5f
+            else -> 1f / 4f
+        }
         if (card.thumbnailPath != null) {
-            // Vary height by id hash for the staggered feel; Crop fills the tile.
-            val h = when ((card.memoryId.hashCode() and Int.MAX_VALUE) % 3) {
-                0 -> 140.dp
-                1 -> 200.dp
-                else -> 260.dp
-            }
             BlobThumbnail(
                 path = card.thumbnailPath,
-                modifier = Modifier.fillMaxWidth().height(h),
+                modifier = Modifier.fillMaxWidth().aspectRatio(ratio),
                 placeholder = "",
             )
         } else {
             Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().aspectRatio(ratio).padding(12.dp),
                 contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 Text(
                     text = card.title,
                     style = MaterialTheme.typography.titleSmall,
-                    maxLines = 4,
+                    maxLines = 6,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
@@ -217,12 +218,12 @@ private fun PendingTile(capture: CaptureEntity) {
         if (blob != null) {
             BlobThumbnail(
                 path = blob,
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f / 2.5f),
                 placeholder = "",
             )
         } else {
             Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().aspectRatio(1f / 2.5f).padding(12.dp),
                 contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 Text(
