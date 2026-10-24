@@ -18,8 +18,8 @@ android {
         applicationId = "dev.shipyu.mindverse"
         minSdk = 34
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.3.0"
+        versionCode = 5
+        versionName = "0.3.1"
     }
 
     lint {
@@ -65,6 +65,14 @@ android {
             "/META-INF/{AL2.0,LGPL2.1}",
             "META-INF/DEPENDENCIES",
         )
+        jniLibs {
+            // sqlite-vec's loadable extension is registered by filesystem path
+            // (BundledSQLiteDriver.addExtension → MindverseDatabase.vecExtensionPath),
+            // which requires the lib extracted into nativeLibraryDir. AGP's default
+            // packaging (extractNativeLibs=false) leaves that dir empty on-device —
+            // first real-device install crashed at launch (Robolectric can't catch it).
+            useLegacyPackaging = true
+        }
     }
     testOptions {
         unitTests {
