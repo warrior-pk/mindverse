@@ -19,13 +19,16 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
-        vectorDrawables.useSupportLibrary = true
     }
 
     lint {
-        // Hard errors-in-CI defaults; keep strict but allow specific relaxations here.
+        // Strict: warnings fail the build for debug and release.
+        // Deliberately disabled: version-pins are compatibility pins (AGP 8.13 + compileSdk 36
+        // era, see issue 01 comments); the newer-version lints would flag them as errors.
         abortOnError = true
+        warningsAsErrors = true
         checkReleaseBuilds = true
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
     }
 
     buildTypes {
@@ -85,7 +88,6 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
     // Coroutines
