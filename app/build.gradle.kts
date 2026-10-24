@@ -65,6 +65,12 @@ android {
             "META-INF/DEPENDENCIES",
         )
     }
+    testOptions {
+        unitTests {
+            // Robolectric: runs the Room + BundledSQLiteDriver in-memory test DB on the JVM.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 kotlin {
@@ -78,6 +84,16 @@ ksp {
 }
 
 dependencies {
+    // Persistence: Room on the bundled SQLite driver (FTS5 + loadable extensions
+    // compile flags in androidx bundled SQLite; framework SQLite lacks FTS5/vec0),
+    // sqlite-vec extension .so shipped in app/src/main/jniLibs (see ADR-0003, spec R2-5).
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.sqlite.bundled)
+
+    // Keystore-encrypted settings persistence (spec: key storage technical default)
+    implementation(libs.androidx.datastore.preferences)
+
     // Compose (BOM-pinned)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -96,4 +112,11 @@ dependencies {
     // Tests
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+}
+
+ksp {
+    arg("minimalMetadata", "true")
+    // Room schema export: committed under app/schemas as the migration contract.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }

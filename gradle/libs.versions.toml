@@ -7,6 +7,13 @@ coroutines = "1.10.2"
 composeBom = "2025.09.00"
 activityCompose = "1.11.0"
 junit4 = "4.13.2"
+# Compatibility pins (AGP 8.13 + compileSdk 36 era, see issue 01/02 comments):
+# - room 2.7.x is the matched-generation line for androidx.sqlite 2.7.1; Room 2.8 pulls
+#   sqlite 2.8-alpha transitively and demands newer AGP-era artifacts.
+room = "2.7.2"
+sqliteBundled = "2.7.1"
+datastore = "1.3.0"
+robolectric = "4.17"
 
 [libraries]
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
@@ -18,6 +25,11 @@ androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-ru
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version = "1.3.0" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
