@@ -27,7 +27,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -178,18 +181,13 @@ private fun NearDupSection(
     }
 }
 
-/** Masonry tile: tall image tile, or tall title tile (1:2–1:4 w:h). */
+/** Masonry tile: height follows content — title length for text, bitmap aspect
+ *  for images — clamped to the 1:2 (min) … 1:4 (max) w:h band. */
 @Composable
 private fun MasonryTile(card: GalleryCard, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        // Tall-tile rhythm: width:height between 1:2 and 1:4 by id hash.
-        val ratio = when ((card.memoryId.hashCode() and Int.MAX_VALUE) % 4) {
-            0 -> 1f / 2f
-            1 -> 1f / 2.75f
-            2 -> 1f / 3.5f
-            else -> 1f / 4f
-        }
         if (card.thumbnailPath != null) {
+            val ratio = imageTileRatio(card.thumbnailPath)
             BlobThumbnail(
                 path = card.thumbnailPath,
                 modifier = Modifier.fillMaxWidth().aspectRatio(ratio),
@@ -197,18 +195,48 @@ private fun MasonryTile(card: GalleryCard, onClick: () -> Unit) {
             )
         } else {
             Box(
-                modifier = Modifier.fillMaxWidth().aspectRatio(ratio).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().aspectRatio(textTileRatio(card.title)).padding(12.dp),
                 contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 Text(
                     text = card.title,
                     style = MaterialTheme.typography.titleSmall,
-                    maxLines = 6,
+                    maxLines = 8,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
         }
     }
+}
+
+/** Title length picks the tile height: short → 1:2, long → up to 1:4. */
+private fun textTileRatio(title: String): Float = when {
+    title.length <= 40 -> 1f / 2f
+    title.length <= 90 -> 1f / 2.75f
+    title.length <= 160 -> 1f / 3.5f
+    else -> 1f / 4f
+}
+
+/**
+ * Bitmap aspect clamped into the tile band (wide panoramas → 1:2, tall shots →
+ * up to 1:4). Bounds-only decode, so it is cheap; mid-band until loaded.
+ */
+@Composable
+private fun imageTileRatio(path: String): Float {
+    var ratio by remember(path) { mutableStateOf(1f / 2.75f) }
+    LaunchedEffect(path) {
+        val computed = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeFile(path, bounds)
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
+                (bounds.outWidth.toFloat() / bounds.outHeight.toFloat()).coerceIn(0.25f, 0.5f)
+            }.getOrNull()
+        }
+        if (computed != null) ratio = computed
+    }
+    return ratio
 }
 
 @Composable
