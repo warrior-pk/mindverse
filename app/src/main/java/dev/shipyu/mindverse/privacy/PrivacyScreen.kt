@@ -42,8 +42,8 @@ import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
 @Composable
 fun PrivacyScreen(
     controller: PrivacyController,
-    watcherSettings: WatcherSettings? = null,
     modifier: Modifier = Modifier,
+    watcherSettings: WatcherSettings? = null,
 ) {
     val state by controller.state.collectAsStateWithLifecycle(initialValue = PrivacyUiState.idle())
     val autoIngest by (watcherSettings?.autoIngest ?: kotlinx.coroutines.flow.flowOf(false))

@@ -58,7 +58,11 @@ class NotificationScreenshotPrompt(
             .build()
         val compat = NotificationManagerCompat.from(context)
         if (!compat.areNotificationsEnabled()) return
-        runCatching { compat.notify(NOTIFICATION_ID, notification) }
+        try {
+            compat.notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // Prompting is best-effort; never crash the watcher.
+        }
     }
 
     private fun ensureChannel() {
@@ -88,7 +92,11 @@ class ScreenshotPromptReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_ACCEPT) return
         val uri = intent.getStringExtra(EXTRA_URI)?.let(Uri::parse) ?: return
         val mime = intent.getStringExtra(EXTRA_MIME)
-        NotificationManagerCompat.from(context).cancel(NotificationScreenshotPrompt.NOTIFICATION_ID)
+        try {
+            NotificationManagerCompat.from(context).cancel(NotificationScreenshotPrompt.NOTIFICATION_ID)
+        } catch (_: SecurityException) {
+            // Best-effort teardown.
+        }
 
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {

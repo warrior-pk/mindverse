@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import dev.shipyu.mindverse.MainActivity
 
 /**
@@ -38,11 +39,11 @@ interface PipelineChip {
 object MindverseLinks {
     const val SCHEME = "mindverse"
 
-    fun memory(memoryId: String): Uri = Uri.parse("$SCHEME://memory/$memoryId")
+    fun memory(memoryId: String): Uri = "$SCHEME://memory/$memoryId".toUri()
 
-    fun pipeline(): Uri = Uri.parse("$SCHEME://pipeline")
+    fun pipeline(): Uri = "$SCHEME://pipeline".toUri()
 
-    fun deadLetter(): Uri = Uri.parse("$SCHEME://dead-letter")
+    fun deadLetter(): Uri = "$SCHEME://dead-letter".toUri()
 }
 
 /**
@@ -102,11 +103,19 @@ internal object PipelineNotifications {
     fun notify(context: Context, notification: Notification) {
         val compat = NotificationManagerCompat.from(context)
         if (!compat.areNotificationsEnabled()) return
-        runCatching { compat.notify(NOTIFICATION_ID, notification) }
+        try {
+            compat.notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // POST_NOTIFICATIONS denied mid-flight: the chip is best-effort.
+        }
     }
 
     fun cancel(context: Context) {
-        runCatching { NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID) }
+        try {
+            NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+        } catch (_: SecurityException) {
+            // Best-effort teardown, never crash the pipeline.
+        }
     }
 }
 

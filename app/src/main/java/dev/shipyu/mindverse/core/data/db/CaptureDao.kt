@@ -73,4 +73,20 @@ interface CaptureDao {
     /** Embed is idempotent; a re-run after process death skips already-created Memories. */
     @Query("SELECT * FROM captures WHERE memory_id = :memoryId LIMIT 1")
     suspend fun findByMemoryId(memoryId: String): CaptureEntity?
+
+    /** Near-duplicate candidates awaiting the in-app merge prompt (spec R5-3). */
+    @Query("SELECT * FROM captures WHERE near_duplicate_of IS NOT NULL AND deleted = 0 ORDER BY captured_at DESC")
+    suspend fun listNearDuplicates(): List<CaptureEntity>
+
+    /** Merge prompt "keep both": drop the flag without touching content. */
+    @Query("UPDATE captures SET near_duplicate_of = NULL, updated_at = :now WHERE id = :id")
+    suspend fun clearNearDuplicate(id: String, now: Long)
+
+    /** Capture review sheet (ticket 06): user-edited source context. */
+    @Query("UPDATE captures SET source_app = :sourceApp, deep_link = :deepLink, updated_at = :now WHERE id = :id")
+    suspend fun updateSourceContext(id: String, sourceApp: String?, deepLink: String?, now: Long)
+
+    /** Recently ingested captures (review surface), newest first. */
+    @Query("SELECT * FROM captures WHERE deleted = 0 ORDER BY created_at DESC LIMIT :limit")
+    suspend fun listRecent(limit: Int): List<CaptureEntity>
 }

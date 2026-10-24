@@ -13,8 +13,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
 
     <!-- Ticket 05: the screenshot watcher reads the latest screenshot row from MediaStore
-         after a ScreenCaptureCallback event (the callback itself needs no permission). -->
+         after a ScreenCaptureCallback event (the callback itself needs no permission).
+         DETECT_SCREEN_CAPTURE is the normal (non-runtime) permission API 36 requires for
+         Activity.registerScreenCaptureCallback; harmless on 34/35. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE" />
 
     <application
         android:name=".MindverseApp"

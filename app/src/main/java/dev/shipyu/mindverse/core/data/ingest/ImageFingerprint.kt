@@ -2,6 +2,8 @@ package dev.shipyu.mindverse.core.data.ingest
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.core.graphics.get
+import androidx.core.graphics.scale
 import kotlin.math.abs
 
 /**
@@ -13,14 +15,14 @@ import kotlin.math.abs
 object ImageFingerprint {
 
     fun dhash(bitmap: Bitmap): Long {
-        val scaled = Bitmap.createScaledBitmap(bitmap, 9, 8, true)
+        val scaled = bitmap.scale(9, 8, true)
         try {
             var hash = 0L
             var bit = 0
             for (y in 0 until 8) {
                 for (x in 0 until 8) {
-                    val left = luminance(scaled.getPixel(x, y))
-                    val right = luminance(scaled.getPixel(x + 1, y))
+                    val left = luminance(scaled[x, y])
+                    val right = luminance(scaled[x + 1, y])
                     if (left > right) hash = hash or (1L shl bit)
                     bit++
                 }

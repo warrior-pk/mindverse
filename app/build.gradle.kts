@@ -26,10 +26,18 @@ android {
         // Strict: warnings fail the build for debug and release.
         // Deliberately disabled: version-pins are compatibility pins (AGP 8.13 + compileSdk 36
         // era, see issue 01 comments); the newer-version lints would flag them as errors.
+        // SelectedPhotoAccess: the screenshot watcher (issue 05) needs the full media grant —
+        // partial "selected photos" access can never contain the just-taken screenshot, and
+        // the watcher silently no-ops without the grant.
         abortOnError = true
         warningsAsErrors = true
         checkReleaseBuilds = true
-        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+        disable += setOf(
+            "GradleDependency",
+            "NewerVersionAvailable",
+            "AndroidGradlePluginVersion",
+            "SelectedPhotoAccess",
+        )
     }
 
     buildTypes {
