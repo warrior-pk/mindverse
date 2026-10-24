@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
@@ -60,10 +61,10 @@ fun GalleryScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalItemSpacing = 10.dp,
         ) {
-            item {
+            item(span = StaggeredGridItemSpan.FullLine) {
                 Text(text = "Brain", style = MaterialTheme.typography.headlineSmall)
             }
-            item {
+            item(span = StaggeredGridItemSpan.FullLine) {
                 var importing by remember { mutableStateOf(false) }
                 var importMsg by remember { mutableStateOf<String?>(null) }
                 Column {
@@ -90,7 +91,7 @@ fun GalleryScreen(
             }
 
             if (state.nearDups.isNotEmpty()) {
-                item {
+                item(span = StaggeredGridItemSpan.FullLine) {
                     NearDupSection(
                         pairs = state.nearDups,
                         onKeepBoth = { id -> scope.launch { controller.keepBoth(id) } },
@@ -99,7 +100,7 @@ fun GalleryScreen(
                 }
             }
 
-            item {
+            item(span = StaggeredGridItemSpan.FullLine) {
                 FilterSection(
                     state = state,
                     onCategory = controller::setCategory,
@@ -109,7 +110,7 @@ fun GalleryScreen(
             }
 
             if (state.loading) {
-                item {
+                item(span = StaggeredGridItemSpan.FullLine) {
                     Text(
                         text = "…",
                         style = MaterialTheme.typography.bodyMedium,
@@ -117,7 +118,7 @@ fun GalleryScreen(
                     )
                 }
             } else if (state.cards.isEmpty() && state.pending.isEmpty()) {
-                item {
+                item(span = StaggeredGridItemSpan.FullLine) {
                     EmptyState(hasFilters = state.category != null || state.sourceApp != null || state.timeRange != TimeRange.ALL)
                 }
             } else {
