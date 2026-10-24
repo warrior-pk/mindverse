@@ -43,6 +43,7 @@ private enum class FirstRunStep { WELCOME, PERMISSIONS, PRIVACY, KEY }
 fun FirstRunScreen(
     controller: FirstRunController,
     onOpenPrivacy: () -> Unit,
+    onOpenSupport: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,6 +80,17 @@ fun FirstRunScreen(
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { step = FirstRunStep.PERMISSIONS }, modifier = Modifier.fillMaxWidth()) {
                         Text("Continue")
+                    }
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                controller.completeOnboarding()
+                                onOpenSupport()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Ways to support Mindverse →")
                     }
                 }
 

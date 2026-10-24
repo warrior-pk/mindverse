@@ -29,7 +29,7 @@ import dev.shipyu.mindverse.ui.detail.MemoryDetailController
 import dev.shipyu.mindverse.ui.detail.MemoryDetailScreen
 import dev.shipyu.mindverse.ui.gallery.GalleryController
 import dev.shipyu.mindverse.ui.gallery.GalleryScreen
-import dev.shipyu.mindverse.ui.support.SupportPlaceholderScreen
+import dev.shipyu.mindverse.ui.support.SupportScreen
 
 /** Bottom-level navigation (ticket 06): Gallery / Ask / Privacy / Support. */
 enum class NavTab(val label: String) {
@@ -57,8 +57,9 @@ fun MindverseNav(
     versionCode: Int,
     initialMemoryId: String? = null,
     initialCaptureId: String? = null,
+    initialTab: NavTab = NavTab.GALLERY,
 ) {
-    var tab by rememberSaveable { mutableStateOf(NavTab.GALLERY) }
+    var tab by rememberSaveable { mutableStateOf(initialTab) }
     var memoryId by rememberSaveable { mutableStateOf(initialMemoryId) }
     var captureId by rememberSaveable { mutableStateOf(initialCaptureId) }
 
@@ -107,7 +108,7 @@ fun MindverseNav(
                         controller = privacyController,
                         watcherSettings = watcherSettings,
                     )
-                    NavTab.SUPPORT -> SupportPlaceholderScreen(
+                    NavTab.SUPPORT -> SupportScreen(
                         updateController = updateController,
                         versionName = versionName,
                         versionCode = versionCode,

@@ -29,8 +29,8 @@ android {
         applicationId = "dev.shipyu.mindverse"
         minSdk = 34
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.5.0"
+        versionCode = 9
+        versionName = "0.6.0"
     }
 
     lint {
@@ -163,6 +163,9 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.core.ktx)
+
+    // Support screen (issue 09): local QR rendering for the UPI card (FOSS, both flavors).
+    implementation(libs.zxing.core)
 
     // Tests
     testImplementation(libs.junit4)

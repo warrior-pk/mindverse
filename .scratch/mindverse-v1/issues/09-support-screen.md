@@ -1,6 +1,6 @@
 # 09 — Support screen: UPI (India) + GitHub Sponsors (global)
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 06
 Spec: .scratch/mindverse-v1/spec.md (Support screen)
 Missing info: none — owner provided the real UPI VPA (`piyu8h@slc`) on 2026-10-25; it replaces `REPLACE-ME-VPA` in the single constant.
@@ -35,3 +35,26 @@ Implement the static Support screen (decided post-grill; spec "Support screen") 
 ## Comments
 
 - Oct 24 2026 (grilling R6): the "remote-config-able URL string" promise is now ratified — these constants become the built-in defaults beneath remote Config (ADR-0005, ticket 10). Keep the VPA/URLs as single constants so ticket 10 can mirror them into the default config; the `Status:` / missinginfo story is unchanged.
+
+## Comments
+
+- 2026-10-25 (implemented): Support screen ships with the owner's real VPA
+  (`piyu8h@slc`), replacing the placeholder constant.
+  - **Constants as data** (`support/SupportConfig.kt`): `UPI_VPA`, payee name, note,
+    `SPONSORS_URL`, and the recorded-but-deferred `BMC_FALLBACK_URL` — single constants so
+    ticket 10's remote Config mirrors them as built-in defaults. `upiPaymentUri` is built
+    exactly per spec (`upi://pay?pa=<VPA>&pn=warrior-pk&cu=INR&tn=Mindverse+support`, no
+    `am` field) and is the exact string the QR encodes.
+  - **QR**: local ZXing encoding (`com.google.zxing:core` 3.5.3, Apache-2.0 —
+    FOSS-friendly for both flavors), rendered on-device, zero network.
+  - **India card**: QR + "Pay via UPI app" (`Intent.createChooser` ACTION_VIEW so the
+    system chooser lists installed UPI apps) + "Copy VPA" clipboard fallback.
+  - **Global card**: "♥ Sponsor on GitHub" (ACTION_VIEW browser to the Sponsors URL, one-
+    time sponsorships supported) + "Copy link" fallback.
+  - **Reachable from first-run onboarding** (welcome-page link completes onboarding and
+    opens the Support tab) **and the nav rail** (ticket 06 nav).
+  - No manifest permissions added; no payment SDK; no analytics; BMC card deliberately
+    absent (deferred by decision).
+  - Tests: `QrCodeTest` — URI matches the spec string byte-for-byte, QR decodes back to
+    that exact URI via a ZXing round-trip, matrix shape sanity. Lint + tests green on both
+    flavors; version 0.6.0.

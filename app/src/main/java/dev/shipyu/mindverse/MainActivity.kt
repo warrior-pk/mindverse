@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -56,12 +59,14 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 val firstRunComplete by firstRunController.firstRunComplete
                     .collectAsStateWithLifecycle(initialValue = null)
+                var openSupportTab by remember { mutableStateOf(false) }
                 when (firstRunComplete) {
                     // Still reading the preference: keep the splash surface minimal.
                     null -> Unit
                     false -> FirstRunScreen(
                         controller = firstRunController,
                         onOpenPrivacy = { /* privacy preface is step 3; screen is one tap away in nav */ },
+                        onOpenSupport = { openSupportTab = true },
                         onDone = { /* state flips via the collected flow */ },
                     )
                     else -> MindverseNav(
@@ -76,6 +81,11 @@ class MainActivity : ComponentActivity() {
                         versionCode = BuildConfig.VERSION_CODE,
                         initialMemoryId = memoryId,
                         initialCaptureId = captureId,
+                        initialTab = if (openSupportTab) {
+                            dev.shipyu.mindverse.ui.nav.NavTab.SUPPORT
+                        } else {
+                            dev.shipyu.mindverse.ui.nav.NavTab.GALLERY
+                        },
                     )
                 }
             }
