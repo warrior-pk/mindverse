@@ -31,9 +31,9 @@ import dev.shipyu.mindverse.ui.gallery.GalleryController
 import dev.shipyu.mindverse.ui.gallery.GalleryScreen
 import dev.shipyu.mindverse.ui.support.SupportScreen
 
-/** Bottom-level navigation (ticket 06): Gallery / Ask / Privacy / Support. */
+/** Bottom-level navigation (ticket 06): Brain / Ask / Privacy / Support. */
 enum class NavTab(val label: String) {
-    GALLERY("Gallery"),
+    BRAIN("Brain"),
     ASK("Ask"),
     PRIVACY("Privacy"),
     SUPPORT("Support"),
@@ -57,7 +57,7 @@ fun MindverseNav(
     versionCode: Int,
     initialMemoryId: String? = null,
     initialCaptureId: String? = null,
-    initialTab: NavTab = NavTab.GALLERY,
+    initialTab: NavTab = NavTab.BRAIN,
 ) {
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     var memoryId by rememberSaveable { mutableStateOf(initialMemoryId) }
@@ -96,7 +96,7 @@ fun MindverseNav(
                     onBack = { captureId = null },
                 )
                 else -> when (tab) {
-                    NavTab.GALLERY -> GalleryScreen(
+                    NavTab.BRAIN -> GalleryScreen(
                         controller = galleryController,
                         onOpenMemory = { id -> memoryId = id },
                     )
@@ -130,7 +130,7 @@ private fun TabIcon(tab: NavTab) {
         val w = size.width
         val h = size.height
         when (tab) {
-            NavTab.GALLERY -> {
+            NavTab.BRAIN -> {
                 val cell = w / 4f
                 for (row in 0..1) for (col in 0..1) {
                     drawCircle(color, radius = cell * 0.55f, center = androidx.compose.ui.geometry.Offset(cell * (0.75f + col * 1.5f), cell * (0.75f + row * 1.5f)))

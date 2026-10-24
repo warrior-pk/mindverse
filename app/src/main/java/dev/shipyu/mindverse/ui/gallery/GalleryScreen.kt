@@ -3,6 +3,7 @@ package dev.shipyu.mindverse.ui.gallery
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,10 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
@@ -38,9 +38,9 @@ import dev.shipyu.mindverse.ui.common.BlobThumbnail
 import kotlinx.coroutines.launch
 
 /**
- * Gallery (ticket 06): the home screen of Memories — cards, category / time-range /
- * source-app filters, and the near-duplicate merge prompt. Empty/loading states are part
- * of the design; no invented flows.
+ * Brain (home): masonry of Memories — thumbnails first, no text clutter.
+ * Text Memories show title only; image Memories show the image only.
+ * Filters stay collapsible; detail holds the full summary/tags.
  */
 @Composable
 fun GalleryScreen(
@@ -53,18 +53,20 @@ fun GalleryScreen(
     LaunchedEffect(Unit) { controller.refresh() }
 
     Surface(modifier = modifier.fillMaxSize()) {
-        LazyColumn(
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalItemSpacing = 10.dp,
         ) {
             item {
-                Text(text = "Memories", style = MaterialTheme.typography.headlineSmall)
+                Text(text = "Brain", style = MaterialTheme.typography.headlineSmall)
             }
             item {
                 var importing by remember { mutableStateOf(false) }
                 var importMsg by remember { mutableStateOf<String?>(null) }
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     TextButton(
                         onClick = {
                             scope.launch {
@@ -75,12 +77,12 @@ fun GalleryScreen(
                         },
                         enabled = !importing,
                     ) {
-                        Text(if (importing) "Importing…" else "Import Screenshots")
+                        Text(if (importing) "…" else "Import")
                     }
                     importMsg?.let {
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -106,24 +108,24 @@ fun GalleryScreen(
                 )
             }
 
-            when {
-                state.loading -> item {
+            if (state.loading) {
+                item {
                     Text(
-                        text = "Loading…",
+                        text = "…",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                state.cards.isEmpty() && state.pending.isEmpty() -> item {
+            } else if (state.cards.isEmpty() && state.pending.isEmpty()) {
+                item {
                     EmptyState(hasFilters = state.category != null || state.sourceApp != null || state.timeRange != TimeRange.ALL)
                 }
-                else -> {
-                    items(state.pending, key = { "pending-${it.id}" }) { capture ->
-                        PendingCaptureRow(capture = capture)
-                    }
-                    items(state.cards, key = { it.memoryId }) { card ->
-                        MemoryCardRow(card = card, onClick = { onOpenMemory(card.memoryId) })
-                    }
+            } else {
+                items(state.pending, key = { "pending-${it.id}" }) { capture ->
+                    PendingTile(capture = capture)
+                }
+                items(state.cards, key = { it.memoryId }) { card ->
+                    MasonryTile(card = card, onClick = { onOpenMemory(card.memoryId) })
                 }
             }
         }
@@ -152,29 +154,13 @@ private fun FilterSection(
                 FilterChip(
                     selected = state.category == null,
                     onClick = { onCategory(null) },
-                    label = { Text("All categories") },
+                    label = { Text("All") },
                 )
                 state.categories.forEach { category ->
                     FilterChip(
                         selected = state.category == category,
                         onClick = { onCategory(category) },
                         label = { Text(category) },
-                    )
-                }
-            }
-        }
-        if (state.sourceApps.isNotEmpty()) {
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = state.sourceApp == null,
-                    onClick = { onSourceApp(null) },
-                    label = { Text("All sources") },
-                )
-                state.sourceApps.forEach { app ->
-                    FilterChip(
-                        selected = state.sourceApp == app,
-                        onClick = { onSourceApp(app) },
-                        label = { Text(app.substringAfterLast('.')) },
                     )
                 }
             }
@@ -191,22 +177,16 @@ private fun NearDupSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = "Similar captures",
+                text = "Similar",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            pairs.take(5).forEach { pair ->
+            pairs.take(3).forEach { pair ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(
-                        text = "Similar to a capture from " +
-                            (pair.similarTo.sourceApp ?: "an earlier source"),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { onKeepBoth(pair.capture.id) }) { Text("Keep both") }
+                    TextButton(onClick = { onKeepBoth(pair.capture.id) }) { Text("Keep") }
                     TextButton(onClick = { onDiscardDuplicate(pair.capture.id) }) { Text("Remove") }
                 }
             }
@@ -214,64 +194,47 @@ private fun NearDupSection(
     }
 }
 
+/** Masonry tile: image-only when a thumbnail exists, title-only otherwise. */
 @Composable
-private fun MemoryCardRow(card: GalleryCard, onClick: () -> Unit) {
+private fun MasonryTile(card: GalleryCard, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (card.thumbnailPath != null) {
+            // Vary height by id hash for the staggered feel; Crop fills the tile.
+            val h = when ((card.memoryId.hashCode() and Int.MAX_VALUE) % 3) {
+                0 -> 140.dp
+                1 -> 200.dp
+                else -> 260.dp
+            }
             BlobThumbnail(
                 path = card.thumbnailPath,
-                modifier = Modifier.size(64.dp),
-                placeholder = card.category?.replaceFirstChar { it.uppercase() } ?: "Memory",
+                modifier = Modifier.fillMaxWidth().height(h),
+                placeholder = "",
             )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = card.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-                Spacer(Modifier.height(2.dp))
+        } else {
+            Box(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = card.summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = card.title,
+                    style = MaterialTheme.typography.titleSmall,
                     maxLines = 3,
                 )
-                if (card.tags.isNotEmpty()) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = card.tags.joinToString(" · "),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-private fun PendingCaptureRow(capture: CaptureEntity) {
+private fun PendingTile(capture: CaptureEntity) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        val blob = capture.blobPath?.takeIf { capture.mimeType?.startsWith("image/") == true }
+        if (blob != null) {
             BlobThumbnail(
-                path = capture.blobPath?.takeIf { capture.mimeType?.startsWith("image/") == true },
-                modifier = Modifier.size(64.dp),
-                placeholder = capture.kind.name,
+                path = blob,
+                modifier = Modifier.fillMaxWidth().height(140.dp),
+                placeholder = "",
             )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = when (capture.processingState?.name) {
-                        "DEAD_LETTER" -> "Needs attention — ${capture.processingError ?: "tap to retry"}"
-                        "DONE" -> "Processed"
-                        else -> "Processing…"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = (capture.deepLink ?: capture.sourceApp ?: capture.kind.name) +
-                        " · ${capture.kind.name.lowercase()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                )
+        } else {
+            Box(modifier = Modifier.padding(12.dp)) {
+                Text(text = "…", style = MaterialTheme.typography.titleSmall)
             }
         }
     }
@@ -281,16 +244,15 @@ private fun PendingCaptureRow(capture: CaptureEntity) {
 private fun EmptyState(hasFilters: Boolean) {
     Column {
         Text(
-            text = if (hasFilters) "Nothing matches these filters" else "No Memories yet",
+            text = if (hasFilters) "Nothing here" else "Empty",
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(Modifier.height(4.dp))
         Text(
             text = if (hasFilters) {
-                "Try widening the time range or clearing the filters."
+                "Clear the filters."
             } else {
-                "Share something into Mindverse or take a screenshot — captured items " +
-                    "appear here once processed."
+                "Share or screenshot — it lands here."
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

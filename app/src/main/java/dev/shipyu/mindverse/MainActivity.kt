@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
                         initialTab = if (openSupportTab) {
                             dev.shipyu.mindverse.ui.nav.NavTab.SUPPORT
                         } else {
-                            dev.shipyu.mindverse.ui.nav.NavTab.GALLERY
+                            dev.shipyu.mindverse.ui.nav.NavTab.BRAIN
                         },
                     )
                 }
