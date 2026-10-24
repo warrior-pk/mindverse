@@ -114,7 +114,21 @@ class MemoryRepository(
      */
     suspend fun searchByFullText(query: String, limit: Int = 20): List<MemoryEntity> {
         require(limit > 0)
-        val matchExpression = ftsPhrase(query)
+        return searchFts(ftsPhrase(query), limit)
+    }
+
+    /**
+     * Token-OR FTS5 search for Ask retrieval (ticket 07): any content word in the question
+     * matches, BM25 ranks memories with more/rarer matching words first. Each token is
+     * individually quoted so user text can never inject FTS5 syntax.
+     */
+    suspend fun searchByAnyToken(query: String, limit: Int = 20): List<MemoryEntity> {
+        require(limit > 0)
+        val expression = ftsTokensOr(query) ?: return emptyList()
+        return searchFts(expression, limit)
+    }
+
+    private suspend fun searchFts(matchExpression: String, limit: Int): List<MemoryEntity> {
         val sql = """
             SELECT memory.* FROM memory_fts
             JOIN memory ON memory.rowid = memory_fts.rowid
@@ -145,6 +159,22 @@ class MemoryRepository(
     companion object {
         /** FTS5 quoted-phrase form: doubles embedded quotes so text can't break out. */
         internal fun ftsPhrase(query: String): String = "\"" + query.replace("\"", "\"\"") + "\""
+
+        private val STOP_WORDS = setOf(
+            "what", "when", "where", "which", "who", "how", "is", "are", "was", "were",
+            "the", "my", "for", "from", "with", "about", "that", "this", "did", "does",
+            "and", "to", "in", "on", "of", "at",
+        )
+
+        /** Quoted tokens joined by OR; null when no content tokens remain. */
+        internal fun ftsTokensOr(query: String): String? {
+            val tokens = query.lowercase()
+                .split(Regex("[^\\p{L}\\p{N}]+"))
+                .filter { it.length >= 2 && it !in STOP_WORDS }
+                .distinct()
+            if (tokens.isEmpty()) return null
+            return tokens.joinToString(" OR ") { ftsPhrase(it) }
+        }
     }
 }
 

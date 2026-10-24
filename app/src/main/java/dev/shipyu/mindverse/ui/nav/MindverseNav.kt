@@ -20,7 +20,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shipyu.mindverse.privacy.PrivacyController
 import dev.shipyu.mindverse.privacy.PrivacyScreen
 import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
-import dev.shipyu.mindverse.ui.ask.AskPlaceholderScreen
+import dev.shipyu.mindverse.ui.ask.AskController
+import dev.shipyu.mindverse.ui.ask.AskScreen
 import dev.shipyu.mindverse.ui.captures.CaptureReviewController
 import dev.shipyu.mindverse.ui.captures.CaptureReviewScreen
 import dev.shipyu.mindverse.ui.detail.MemoryDetailController
@@ -45,6 +46,7 @@ enum class NavTab(val label: String) {
 @Composable
 fun MindverseNav(
     galleryController: GalleryController,
+    askController: AskController,
     detailController: MemoryDetailController,
     reviewController: CaptureReviewController,
     privacyController: PrivacyController,
@@ -93,7 +95,10 @@ fun MindverseNav(
                         controller = galleryController,
                         onOpenMemory = { id -> memoryId = id },
                     )
-                    NavTab.ASK -> AskPlaceholderScreen()
+                    NavTab.ASK -> AskScreen(
+                        controller = askController,
+                        onOpenMemory = { id -> memoryId = id },
+                    )
                     NavTab.PRIVACY -> PrivacyScreen(
                         controller = privacyController,
                         watcherSettings = watcherSettings,

@@ -14,6 +14,7 @@ import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
 import dev.shipyu.mindverse.ui.captures.CaptureReviewController
 import dev.shipyu.mindverse.ui.detail.MemoryDetailController
 import dev.shipyu.mindverse.ui.gallery.GalleryController
+import dev.shipyu.mindverse.ui.ask.AskController
 import dev.shipyu.mindverse.ui.nav.MindverseNav
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var privacyController: PrivacyController
     @Inject lateinit var galleryController: GalleryController
+    @Inject lateinit var askController: AskController
     @Inject lateinit var memoryDetailController: MemoryDetailController
     @Inject lateinit var captureReviewController: CaptureReviewController
     @Inject lateinit var screenshotHandler: ScreenshotIngestHandler
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 MindverseNav(
                     galleryController = galleryController,
+                    askController = askController,
                     detailController = memoryDetailController,
                     reviewController = captureReviewController,
                     privacyController = privacyController,

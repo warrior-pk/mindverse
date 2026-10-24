@@ -56,4 +56,12 @@ object UiModule {
         scheduler: PipelineScheduler,
         clock: Clock,
     ): CaptureReviewController = CaptureReviewController(db, repository, scheduler, clock)
+
+    @Provides
+    @Singleton
+    fun askController(
+        service: dev.shipyu.mindverse.core.ask.AskService,
+        @Named("ui") scope: CoroutineScope,
+    ): dev.shipyu.mindverse.ui.ask.AskController =
+        dev.shipyu.mindverse.ui.ask.AskController(service, scope)
 }
