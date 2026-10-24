@@ -1,0 +1,5 @@
+# Proprietary reference binaries — never commit
+*.apk
+
+# Local-only reference material (never commit)
+docs/private/

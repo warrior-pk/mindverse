@@ -1,0 +1,3 @@
+# Tier-2 triggers in v1 behind an accessibility opt-in
+
+v1 ships the floating edge handle (SYSTEM_ALERT_WINDOW) and the volume-chord hardware trigger (AccessibilityService `onKeyEvent`), plus silent zero-popup capture (`AccessibilityService.takeScreenshot`, API 30+) with package + best-effort browser-URL source context — behind an explicit in-app consent wizard, not default-on. This is only possible because distribution is sideload-first (ADR-0001); on the Play Store these surfaces require sensitive-use declarations we deliberately avoid. The trade-off: battery/service-restart complexity and a larger trust surface voted in for the friction-free capture that is the product's core pillar.
