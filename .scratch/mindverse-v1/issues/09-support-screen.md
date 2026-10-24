@@ -31,3 +31,7 @@ Implement the static Support screen (decided post-grill; spec "Support screen") 
 - Screen is reachable from first-run onboarding AND the nav rail.
 - No permission requests added to the manifest.
 - Builds in both `play` and `fdroid` flavors (ZXing choice must be FOSS-friendly for both).
+
+## Comments
+
+- Oct 24 2026 (grilling R6): the "remote-config-able URL string" promise is now ratified — these constants become the built-in defaults beneath remote Config (ADR-0005, ticket 10). Keep the VPA/URLs as single constants so ticket 10 can mirror them into the default config; the `Status:` / missinginfo story is unchanged.

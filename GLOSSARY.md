@@ -35,3 +35,7 @@ _Avoid_: Backfill, scan, migration
 **Trigger**:
 A user or system event that starts ingestion: share-sheet share, Quick Settings tile, screenshot watch, voice memo, or a future accessibility/hardware trigger.
 _Avoid_: Capture (as a verb for the trigger event), hook
+
+**Config**:
+Remotely updated, signed values (support URLs, feature kill-switches) delivered through the app's update channel that adjust app behavior without a code release. Never contains user content; can only switch features off, never on.
+_Avoid_: remote settings, preferences, remote config

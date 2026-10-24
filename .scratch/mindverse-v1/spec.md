@@ -1,6 +1,6 @@
 # Mindverse v1 — Spec
 
-Status of this document: ratified by grilling session (Rounds 1–5, Oct 24 2026). Vocabulary is normative per `GLOSSARY.md` at the repo root.
+Status of this document: ratified by grilling session (Rounds 1–6, Oct 24 2026). Vocabulary is normative per `GLOSSARY.md` at the repo root.
 
 ## What Mindverse is
 
@@ -42,6 +42,12 @@ Reference teardown of the inspiration app (a commercial OEM memory app): `docs/p
 | R5-5 | OCR engine | Gradle flavor split: `play` = ML Kit text+barcode; `fdroid` = FOSS OCR (PaddleOCR-ONNX or Tesseract) behind one interface |
 | R5-6 | Topology | Single `:app` module, package-by-feature, Hilt; boundaries = packages until real pain demands modules |
 | R5-7 | Milestone 1 | Spine-first (below) |
+| R6-1 | Config | No config server, ever: signed `config.json` in the GitHub repo, fetched via the update-check code path, cached locally, built-in defaults as fallback (ADR-0005) |
+| R6-2 | Kill-switches | OFF-only: remote Config may force a feature off (overrides local opt-in), never on |
+| R6-3 | Refresh | Config piggybacks the update check + a 24h-debounced cold-start check; no background poller, no WorkManager periodic |
+| R6-4 | Integrity | Ed25519-signed config, pubkey baked into APK; invalid/missing → silent discard, defaults used |
+| R6-5 | Updates | In-app update: GitHub Releases API `versionCode` → newer → cached APK → installer intent (user confirms; no Play In-App Updates API). No code hot-fix path on Android |
+| R6-6 | Egress | Config fetch logged on the Privacy screen as a non-AI outbound row with a per-feature toggle |
 
 ## Technical defaults (decided, not grilled)
 
@@ -79,7 +85,7 @@ Static, zero-backend, zero-egress support/donations screen in the nav (decided p
 
 1. **India card → UPI** (0% fee): QR rendered locally from `upi://pay?pa=<VPA>&pn=warrior-pk&cu=INR&tn=Mindverse+support`, "Pay via UPI app" button firing `ACTION_VIEW` in `createChooser` (system chooser lists GPay/PhonePe/Paytm/…), amount left empty for the payer, plus a "Copy VPA" fallback for apps with flaky `upi://` handling.
 2. **Global card → GitHub Sponsors** (0% fee, GitHub covers payment processing): button opening `github.com/sponsors/warrior-pk` (one-time sponsorships supported) + "Copy link" fallback. Setup is a one-time human step: Stripe Connect Express onboarding *through GitHub's dashboard* (India is on GitHub's supported-countries list — Sponsors does not require the standalone Stripe account, which is invite-only in India).
-- Buttons ship as data (remote-config-able URL strings), so fallbacks are config swaps, not code changes.
+- **Buttons ship as data (remote-config-able URL strings), so fallbacks are config swaps, not code changes** — mechanism ratified in Round 6: signed remote Config per ADR-0005; these URLs are its built-in defaults.
 - **Buy Me a Coffee is the recorded international fallback (5% fee) — deliberately deferred to a later update**, enabled by swapping the Sponsors URL if Sponsors onboarding ever fails. (Standalone Stripe in India is invite-only since May 2024 per RBI PA-CB rules — do not plan on direct Stripe onboarding.)
 
 ### Post-v1 backlog (not in v1)
@@ -87,7 +93,7 @@ Travel Map module; Flash Memory TTL auto-destruct; OTP notification pinning (Not
 
 ## Milestones
 
-- **M1 "Spine"** (first usable install-on-own-phone build): Share + Tile + watcher prompt → pipeline → card UI → Ask with FTS+embeds + static Support screen. No voice, no edge handle, no accessibility tier, no Vault.
+- **M1 "Spine"** (first usable install-on-own-phone build): Share + Tile + watcher prompt → pipeline → card UI → Ask with FTS+embeds + static Support screen + in-app update check + Config fetch/verify (ADR-0005). No voice, no edge handle, no accessibility tier, no Vault.
 - **M2**: Voice memo (STT one-shot + live words), edge handle, volume chord + a11y opt-in wizard, Import gallery scan.
 - **M3**: Vault (tickets: barcode crop via ML Kit/play / FOSS alternative, Live Updates pre-departure, transient surfaced Pins as a unified temporal-pin system), Privacy screen hardening, E2EE backup.
 
