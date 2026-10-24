@@ -41,8 +41,11 @@ data class GalleryState(
     val timeRange: TimeRange = TimeRange.ALL,
     val sourceApp: String? = null,
     val nearDups: List<NearDupPair> = emptyList(),
+    /** Captures not yet turned into Memories (processing / dead-letter): shown inline
+     *  so Share appears instantly even before WorkManager finishes. */
+    val pending: List<CaptureEntity> = emptyList(),
 ) {
-    val isEmpty: Boolean get() = !loading && cards.isEmpty()
+    val isEmpty: Boolean get() = !loading && cards.isEmpty() && pending.isEmpty()
 }
 
 internal fun MemoryEntity.toCard(capture: CaptureEntity?): GalleryCard = GalleryCard(

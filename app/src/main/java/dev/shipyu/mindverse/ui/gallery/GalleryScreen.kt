@@ -23,12 +23,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.shipyu.mindverse.core.data.db.CaptureEntity
 import dev.shipyu.mindverse.ui.common.BlobThumbnail
 import kotlinx.coroutines.launch
 
@@ -45,6 +47,7 @@ fun GalleryScreen(
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { controller.refresh() }
 
     Surface(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -83,11 +86,16 @@ fun GalleryScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                state.cards.isEmpty() -> item {
+                state.cards.isEmpty() && state.pending.isEmpty() -> item {
                     EmptyState(hasFilters = state.category != null || state.sourceApp != null || state.timeRange != TimeRange.ALL)
                 }
-                else -> items(state.cards, key = { it.memoryId }) { card ->
-                    MemoryCardRow(card = card, onClick = { onOpenMemory(card.memoryId) })
+                else -> {
+                    items(state.pending, key = { "pending-${it.id}" }) { capture ->
+                        PendingCaptureRow(capture = capture)
+                    }
+                    items(state.cards, key = { it.memoryId }) { card ->
+                        MemoryCardRow(card = card, onClick = { onOpenMemory(card.memoryId) })
+                    }
                 }
             }
         }
@@ -204,6 +212,38 @@ private fun MemoryCardRow(card: GalleryCard, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PendingCaptureRow(capture: CaptureEntity) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BlobThumbnail(
+                path = capture.blobPath?.takeIf { capture.mimeType?.startsWith("image/") == true },
+                modifier = Modifier.size(64.dp),
+                placeholder = capture.kind.name,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = when (capture.processingState?.name) {
+                        "DEAD_LETTER" -> "Needs attention — ${capture.processingError ?: "tap to retry"}"
+                        "DONE" -> "Processed"
+                        else -> "Processing…"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = (capture.deepLink ?: capture.sourceApp ?: capture.kind.name) +
+                        " · ${capture.kind.name.lowercase()}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                )
             }
         }
     }

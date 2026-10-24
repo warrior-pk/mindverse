@@ -20,6 +20,7 @@ import dev.shipyu.mindverse.core.egress.AiRole
 import dev.shipyu.mindverse.core.egress.AiVisionRequest
 import dev.shipyu.mindverse.core.egress.EgressFeature
 import dev.shipyu.mindverse.core.embed.EmbeddingEngine
+import dev.shipyu.mindverse.core.ocr.OcrEngine
 import java.io.File
 import java.io.IOException
 import java.time.Clock
@@ -61,6 +62,7 @@ class PipelineProcessor(
     private val embedding: EmbeddingEngine,
     private val chip: PipelineChip,
     private val clock: Clock,
+    private val ocr: OcrEngine? = null,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
 
@@ -313,9 +315,40 @@ class PipelineProcessor(
         failure: AiFailure,
     ): StageOutcome = if (failure.isTransient()) {
         retryOrDeadLetter(capture, attempt, failure.shortDescription)
+    } else if (failure is AiFailure.DeniedByToggle ||
+        failure is AiFailure.MissingKey ||
+        failure is AiFailure.Unconfigured
+    ) {
+        // Keyless/offline path (spec R1-2: app usable keyless): store a local-only
+        // Memory from on-device text/OCR so Share → Gallery works without AI.
+        // AI enrichment can re-run later via Capture review confirm.
+        keylessFallback(capture, attempt, failure.shortDescription)
     } else {
-        // User-actionable (toggle off, missing key, bad config): retrying cannot help.
+        // Other terminal failures (bad config shape, 4xx): retrying cannot help.
         deadLetter(capture, attempt, failure.shortDescription)
+    }
+
+    private suspend fun keylessFallback(
+        capture: CaptureEntity,
+        attempt: Int,
+        reason: String,
+    ): StageOutcome {
+        val draft = LocalFallback.draftFor(capture, ::readBlob, ::readText, ocr)
+            ?: return deadLetter(capture, attempt, reason)
+        val memory = try {
+            repository.createMemory(draft)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            return deadLetter(
+                capture,
+                attempt,
+                "storing the Memory failed: ${error.message.orEmpty().take(160)}",
+            )
+        }
+        db.captureDao().setMemoryId(capture.id, memory.id, clock.millis())
+        ensurePin(capture, memory.id)
+        return StageOutcome.Success(memory.id)
     }
 
     private suspend fun retryOrDeadLetter(

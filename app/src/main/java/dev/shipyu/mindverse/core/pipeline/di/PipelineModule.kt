@@ -12,6 +12,7 @@ import dev.shipyu.mindverse.core.data.ingest.CaptureIngestionService
 import dev.shipyu.mindverse.core.egress.AiGateway
 import dev.shipyu.mindverse.core.embed.EmbeddingEngine
 import dev.shipyu.mindverse.core.embed.ModelRegistry
+import dev.shipyu.mindverse.core.ocr.OcrEngine
 import dev.shipyu.mindverse.core.pipeline.NotificationPipelineChip
 import dev.shipyu.mindverse.core.pipeline.PipelineChip
 import dev.shipyu.mindverse.core.pipeline.PipelineController
@@ -51,7 +52,8 @@ object PipelineModule {
         embedding: EmbeddingEngine,
         chip: PipelineChip,
         clock: Clock,
-    ): PipelineProcessor = PipelineProcessor(db, repository, ai, embedding, chip, clock)
+        ocr: OcrEngine,
+    ): PipelineProcessor = PipelineProcessor(db, repository, ai, embedding, chip, clock, ocr)
 
     @Provides
     @Singleton
@@ -63,5 +65,7 @@ object PipelineModule {
     fun pipelineController(
         ingestion: CaptureIngestionService,
         scheduler: PipelineScheduler,
-    ): PipelineController = PipelineController(ingestion, scheduler)
+        db: MindverseDatabase,
+        clock: Clock,
+    ): PipelineController = PipelineController(ingestion, scheduler, db, clock)
 }

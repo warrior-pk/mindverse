@@ -179,7 +179,7 @@ class PipelineProcessorTest {
     }
 
     @Test
-    fun `terminal failure dead-letters immediately`() = runBlocking {
+    fun `keyless toggle-off creates local Memory instead of dead-lettering`() = runBlocking {
         setUp()
         val outcome = controller.submit(
             proposed(blob = null, kind = CaptureKind.SHARE, mime = null, hash = "d".repeat(64), deepLink = "https://example.com"),
@@ -187,11 +187,29 @@ class PipelineProcessorTest {
 
         gateway.chatReplies += AiOutcome.Failed(AiFailure.DeniedByToggle(dev.shipyu.mindverse.core.egress.EgressFeature.MEMORY_EXTRACTION))
         val result = processor.extract(outcome.capture.id, attempt = 0)
+        assertTrue(result is StageOutcome.Success)
+        val memoryId = (result as StageOutcome.Success).memoryId!!
+        val memory = repository.getMemory(memoryId)!!
+        assertTrue(memory.tags.contains("local-only"))
+        assertEquals(memoryId, db.captureDao().getCapture(outcome.capture.id)!!.memoryId)
+        // Embed still runs on-device so the local Memory is indexed.
+        val embed = processor.embed(outcome.capture.id, attempt = 0)
+        assertEquals(memoryId, (embed as StageOutcome.Success).memoryId)
+        assertEquals(CaptureProcessingState.DONE, db.captureDao().getCapture(outcome.capture.id)!!.processingState)
+    }
+
+    @Test
+    fun `keyless fallback with nothing readable still dead-letters`() = runBlocking {
+        setUp()
+        val outcome = controller.submit(
+            proposed(blob = null, kind = CaptureKind.SHARE, mime = null, hash = "d2".repeat(32), deepLink = null),
+        ) as IngestOutcome.Stored
+
+        gateway.chatReplies += AiOutcome.Failed(AiFailure.MissingKey("gemini-key"))
+        val result = processor.extract(outcome.capture.id, attempt = 0)
         assertTrue(result is StageOutcome.DeadLetter)
         val capture = db.captureDao().getCapture(outcome.capture.id)!!
         assertEquals(CaptureProcessingState.DEAD_LETTER, capture.processingState)
-        assertEquals(1, capture.processingAttempts)
-        assertTrue(capture.processingError!!.contains("egress disabled"))
     }
 
     @Test

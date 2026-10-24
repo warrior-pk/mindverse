@@ -23,13 +23,33 @@ interface PipelineScheduler {
 class PipelineController(
     private val ingestion: CaptureIngestionService,
     private val scheduler: PipelineScheduler,
+    private val db: dev.shipyu.mindverse.core.data.db.MindverseDatabase? = null,
+    private val clock: java.time.Clock? = null,
 ) {
     suspend fun submit(proposed: ProposedCapture): IngestOutcome {
         val outcome = ingestion.ingest(proposed)
         when (outcome) {
             is IngestOutcome.Stored -> scheduler.enqueue(outcome.capture.id)
             is IngestOutcome.NearDuplicate -> scheduler.enqueue(outcome.stored.id)
-            is IngestOutcome.ExactDuplicate -> Unit
+            is IngestOutcome.ExactDuplicate -> {
+                // Re-share of a not-yet-done Capture re-queues it (e.g. keyless
+                // dead-letter then re-share after adding a key). DONE memories
+                // stay silent per spec R5-3.
+                val existing = outcome.existing
+                if (existing.memoryId == null &&
+                    existing.processingState != dev.shipyu.mindverse.core.data.db.CaptureProcessingState.DONE &&
+                    db != null && clock != null
+                ) {
+                    db.captureDao().setProcessingState(
+                        existing.id,
+                        dev.shipyu.mindverse.core.data.db.CaptureProcessingState.PENDING,
+                        0,
+                        null,
+                        clock.millis(),
+                    )
+                    scheduler.enqueue(existing.id)
+                }
+            }
         }
         return outcome
     }

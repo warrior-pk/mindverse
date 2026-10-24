@@ -49,11 +49,14 @@ class GalleryController(
         }
 
         val current = _state.value
+        val pending = captures.filter { it.memoryId == null }
+            .sortedByDescending { it.createdAt }
         _state.value = current.copy(
             loading = false,
             categories = allCards.mapNotNull { it.category }.distinct().sorted(),
             sourceApps = allCards.mapNotNull { it.sourceApp }.distinct().sorted(),
             nearDups = nearDups,
+            pending = pending,
         )
         applyFilters()
     }
