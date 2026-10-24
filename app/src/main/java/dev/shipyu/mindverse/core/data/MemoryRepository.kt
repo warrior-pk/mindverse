@@ -8,7 +8,7 @@ import dev.shipyu.mindverse.core.data.db.MindverseDatabase
 import java.time.Clock
 import java.util.UUID
 
-/** A synthesized Memory at write time: processed card payload + typed Entity rows. */
+/** A synthesized Memory at write time: processed Memory payload + typed Entity rows. */
 data class MemoryDraft(
     val sourceCaptureIds: List<String>,
     val title: String,
@@ -82,7 +82,7 @@ class MemoryRepository(
 
     suspend fun listActive(): List<MemoryEntity> = db.memoryDao().listActive()
 
-    /** Full-card update: stamps updatedAt, keeps createdAt; optional re-embedding. */
+    /** Full-Memory update: stamps updatedAt, keeps createdAt; optional re-embedding. */
     suspend fun updateMemory(memory: MemoryEntity, newEmbedding: FloatArray? = null) {
         val now = clock.millis()
         val stamped = memory.copy(updatedAt = now)

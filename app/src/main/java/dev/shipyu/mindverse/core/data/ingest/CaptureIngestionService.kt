@@ -49,33 +49,36 @@ class CaptureIngestionService(
     suspend fun ingest(proposed: ProposedCapture): IngestOutcome {
         val now = clock.millis()
         val captureDao = db.captureDao()
-        val existing = db.inTransaction {
-            captureDao.findActiveByContentHash(proposed.contentHash)
-                ?: proposed.phash?.let { captureDao.findActiveByPHash(it) }
-        }
-        if (existing != null && existing.contentHash == proposed.contentHash) {
-            // Exact duplicate: silently skip, no second row (spec R5-3).
-            return IngestOutcome.ExactDuplicate(existing)
-        }
-        val capture = CaptureEntity(
-            id = idFactory(),
-            kind = proposed.kind,
-            blobPath = proposed.blobPath,
-            sourceApp = proposed.sourceApp,
-            deepLink = proposed.deepLink,
-            contentHash = proposed.contentHash,
-            phash = proposed.phash,
-            capturedAt = proposed.capturedAt,
-            createdAt = now,
-            updatedAt = now,
-            deleted = false,
-            nearDuplicateOf = existing?.id,
-        )
-        captureDao.insertCapture(capture)
-        return if (existing != null) {
-            IngestOutcome.NearDuplicate(capture, existing)
-        } else {
-            IngestOutcome.Stored(capture)
+        // Whole dedupe check + insert runs in one immediate writer transaction so two
+        // concurrent ingests of the same content cannot both pass the check and double-insert.
+        // Content-hash match wins over pHash (exact dupes are silent skips per spec R5-3).
+        return db.inTransaction {
+            val byHash = captureDao.findActiveByContentHash(proposed.contentHash)
+            if (byHash != null) {
+                // Exact duplicate: silently skip, no second row (spec R5-3).
+                return@inTransaction IngestOutcome.ExactDuplicate(byHash)
+            }
+            val byPHash = proposed.phash?.let { captureDao.findActiveByPHash(it) }
+            val capture = CaptureEntity(
+                id = idFactory(),
+                kind = proposed.kind,
+                blobPath = proposed.blobPath,
+                sourceApp = proposed.sourceApp,
+                deepLink = proposed.deepLink,
+                contentHash = proposed.contentHash,
+                phash = proposed.phash,
+                capturedAt = proposed.capturedAt,
+                createdAt = now,
+                updatedAt = now,
+                deleted = false,
+                nearDuplicateOf = byPHash?.id,
+            )
+            captureDao.insertCapture(capture)
+            if (byPHash != null) {
+                IngestOutcome.NearDuplicate(capture, byPHash)
+            } else {
+                IngestOutcome.Stored(capture)
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ package dev.shipyu.mindverse.core.data.db
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 
 /**
  * Capture-table access. Dedupe queries consider only non-tombstoned rows (deleted = 0),
@@ -27,6 +28,10 @@ interface CaptureDao {
     /** Tombstone (ADR-0003): flag deleted, stamp mutation time; row is retained. */
     @Query("UPDATE captures SET deleted = 1, updated_at = :now WHERE id = :id")
     suspend fun tombstone(id: String, now: Long)
+
+    /** Full row update; callers stamp [CaptureEntity.updatedAt] first. */
+    @Update
+    suspend fun update(capture: CaptureEntity)
 
     @Query("SELECT * FROM captures WHERE deleted = 0 ORDER BY captured_at DESC")
     suspend fun listActive(): List<CaptureEntity>

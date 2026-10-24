@@ -1,5 +1,7 @@
 package dev.shipyu.mindverse.core.data
 
+import androidx.room.useReaderConnection
+import androidx.sqlite.SQLiteStatement
 import dev.shipyu.mindverse.core.data.db.MemoryItemKind
 import dev.shipyu.mindverse.core.data.db.MindverseDatabaseSchema
 import kotlinx.coroutines.runBlocking
@@ -17,7 +19,7 @@ import org.robolectric.annotation.Config
 /**
  * MemoryRepository seam: tombstones drop rows out of both indexes while the row itself
  * persists (ADR-0003); mutation timestamps land on update/tombstone; typed Entity rows
- * (dates/prices/places/tickets/people) round-trip with the card.
+ * (dates/prices/places/tickets/people) round-trip with the Memory.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -108,7 +110,7 @@ class MemoryRepositoryTest {
             repository.updateMemory(memory, newEmbedding = embedding(2))
             assertEquals(1, db.vectorCount())
 
-            // New vector finds the card as its own nearest neighbor (distance ~0).
+            // New vector finds the Memory as its own nearest neighbor (distance ~0).
             val hits = repository.searchByVector(embedding(2), k = 3)
             assertEquals(memory.id, hits.first().memoryId)
             // Old vector no longer matches exactly.
@@ -171,7 +173,7 @@ class MemoryRepositoryTest {
             val clock = FixedClock()
             val repository = MemoryRepository(db, clock)
 
-            val memory = seedMemory(repository, title = "Gym membership card", tags = listOf("receipt"))
+            val memory = seedMemory(repository, title = "Gym membership", tags = listOf("receipt"))
             // Update re-syncs the FTS row via trigger (new title becomes searchable).
             clock.advanceBy(1_000)
             repository.updateMemory(memory.copy(summary = "renewed at Fred Meyer"))
@@ -206,6 +208,67 @@ class MemoryRepositoryTest {
             val db = TestDatabaseFactory.inMemoryDatabase(RuntimeEnvironment.getApplication())
             val repository = MemoryRepository(db, FixedClock())
             assertNull(repository.getMemory("nope"))
+        }
+    }
+
+    @Test
+    fun tombstonePurgesFtsIndexContentsNotJustQueryResults() {
+        runBlocking {
+            val db = TestDatabaseFactory.inMemoryDatabase(RuntimeEnvironment.getApplication())
+            val clock = FixedClock()
+            val repository = MemoryRepository(db, clock)
+
+            val memory = seedMemory(repository, title = "Zebra alpha unique", embedding = embedding(1))
+            // Term is in the index (no deleted=0 join here — raw index view).
+            assertEquals(listOf(1L), ftsRowids(db, "\"zebra alpha unique\""))
+
+            repository.tombstoneMemory(memory.id)
+
+            // Term is gone from the index itself (delete-marker applied), not merely
+            // hidden by the repository's deleted=0 join. FTS5 external-content tables
+            // keep enumerating the rowid in full scans until segment merge, so COUNT(*)
+            // is not a valid hygiene measure — MATCH absence is.
+            assertEquals(emptyList<Long>(), ftsRowids(db, "\"zebra alpha unique\""))
+            assertTrue(repository.searchByFullText("zebra alpha").isEmpty())
+        }
+    }
+
+    /** Raw FTS rowids for a MATCH expression, without the repository's deleted=0 join. */
+    private suspend fun ftsRowids(db: dev.shipyu.mindverse.core.data.db.MindverseDatabase, match: String): List<Long> =
+        db.useReaderConnection { conn ->
+            conn.usePrepared("SELECT rowid FROM memory_fts WHERE memory_fts MATCH ?") { stmt: SQLiteStatement ->
+                stmt.bindText(1, match)
+                val out = ArrayList<Long>()
+                while (stmt.step()) out.add(stmt.getLong(0))
+                out
+            }
+        }
+
+    @Test
+    fun memoryItemUpdateStampsAndTombstoneHidesButRetainsRow() {
+        runBlocking {
+            val db = TestDatabaseFactory.inMemoryDatabase(RuntimeEnvironment.getApplication())
+            val clock = FixedClock()
+            val repository = MemoryRepository(db, clock)
+
+            val memory = seedMemory(repository, embedding = embedding(1))
+            val item = repository.itemsFor(memory.id).first()
+            clock.advanceBy(2_000)
+
+            db.memoryItemDao().updateItem(item.copy(text = "PNR 9ZZZ99", ticketCode = "9ZZZ99", updatedAt = clock.millis))
+            val reloaded = db.memoryItemDao().getItem(item.id)
+            assertNotNull(reloaded)
+            assertEquals("9ZZZ99", reloaded!!.ticketCode)
+            assertEquals(item.createdAt, reloaded.createdAt)
+            assertEquals(clock.millis, reloaded.updatedAt)
+
+            clock.advanceBy(1_000)
+            db.memoryItemDao().tombstone(item.id, now = clock.millis)
+            assertEquals(2, repository.itemsFor(memory.id).size)
+            val tombstoned = db.memoryItemDao().getItem(item.id)
+            assertNotNull(tombstoned)
+            assertTrue(tombstoned!!.deleted)
+            assertEquals(clock.millis, tombstoned.updatedAt)
         }
     }
 }

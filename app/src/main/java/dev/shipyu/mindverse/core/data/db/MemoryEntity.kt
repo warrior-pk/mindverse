@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * A Memory: the processed, structured card derived from one or more Captures — summary,
+ * A Memory: the processed, structured Memory derived from one or more Captures — summary,
  * title, tags, extracted entities — what search/Ask/Collections operate on (GLOSSARY.md).
  *
  * Sync-ready schema (ADR-0003): UUID row [id], mutation timestamps, tombstone [deleted]
@@ -16,9 +16,13 @@ import androidx.room.PrimaryKey
  * vector) live in auxiliary tables outside Room's schema: `memory_fts` and `memory_vec`
  * (see MindverseDatabaseSchema). They are kept consistent by SQL triggers/vector ops;
  * deletion semantics: tombstoned rows remain in `memory` but are dropped from Matches
- * by query-time join on deleted=0, and their vector row is removed eagerly.
+ * by query-time join on deleted=0, their FTS text is purged from the index, and their
+ * vector row is removed eagerly.
  *
- * Chunk-ready (spec R4-3): v1 is 1 card = 1 chunk — a single vec row keyed by [id].
+ * Embedding pointer (ticket): the Memory's embedding lives in `memory_vec` keyed by
+ * `memory_id` = this row's [id] — no separate pointer column is needed.
+ *
+ * Chunk-ready (spec R4-3): v1 is 1 Memory = 1 chunk — a single vec row keyed by [id].
  * The future chunk table fragments long extracted text into multiple vec rows; slotting
  * it in requires no Room migration because `memory_vec` is schema-owned by code
  * (MindverseDatabaseSchema), not by an Entity. See that file's CHUNK-READY note.

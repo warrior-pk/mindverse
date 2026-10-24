@@ -5,6 +5,3 @@ data class MemoryVectorHit(
     val memoryId: String,
     val distance: Double,
 )
-
-/** Single-column helper POJO for raw `SELECT COUNT(*) AS count` queries. */
-data class CountRow(val count: Int)

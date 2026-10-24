@@ -148,8 +148,9 @@ object VecExtension {
 }
 
 /**
- * Creates + maintains the auxiliary indexes. onOpen attaches only when the FTS table is
- * missing (idempotent, covers external deletion/recovery paths); onCreate always runs it.
+ * Creates + maintains the auxiliary indexes. onCreate and onOpen both attach: attach is
+ * idempotent (drops precede trigger creates) so onOpen also upgrades trigger definitions
+ * and purges FTS remnants of tombstoned rows on existing databases.
  * internal: reused by the test-side factory.
  */
 internal class SchemaCallback : RoomDatabase.Callback() {
@@ -158,11 +159,6 @@ internal class SchemaCallback : RoomDatabase.Callback() {
     }
 
     override fun onOpen(connection: androidx.sqlite.SQLiteConnection) {
-        val hasFts = connection.prepare(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'memory_fts'",
-        ).use { statement ->
-            statement.step() && statement.getLong(0) > 0
-        }
-        if (!hasFts) MindverseDatabaseSchema.attach(connection)
+        MindverseDatabaseSchema.attach(connection)
     }
 }

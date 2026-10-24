@@ -42,10 +42,6 @@ interface MemoryDao {
     @RawQuery(observedEntities = [MemoryEntity::class])
     suspend fun searchFtsRaw(query: SupportSQLiteQuery): List<MemoryEntity>
 
-    /** Raw count over the code-owned external-content table `memory_fts`. */
-    @RawQuery(observedEntities = [MemoryEntity::class])
-    suspend fun ftsDocCountRaw(query: SupportSQLiteQuery): CountRow
-
     @Query("SELECT COUNT(*) FROM memory")
     suspend fun countAll(): Int
 

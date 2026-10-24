@@ -13,7 +13,7 @@ import androidx.room.PrimaryKey
  *
  * Sync-ready columns mirror the parent ([createdAt]/[updatedAt]/[deleted]). Rows cascade
  * logically with their Memory (repository-level lifecycle; no cross-entity FK constraint
- * so ingestion andGem processing stay independent of ordering).
+ * so ingestion and downstream processing stay independent of ordering).
  */
 @Entity(
     tableName = "memory_item",
@@ -32,7 +32,7 @@ data class MemoryItemEntity(
     @ColumnInfo(name = "timestamp_start_ms") val timestampStartMs: Long?,
     /** Event end (epoch millis); deadlines use only start. */
     @ColumnInfo(name = "timestamp_end_ms") val timestampEndMs: Long?,
-    /** Price value in base-unit micros (e.g. 2.50 USD = 2_500_000µ$). Spec R4-1 core card. */
+    /** Price value in base-unit micros (e.g. 2.50 USD = 2_500_000µ$). Spec R4-1 core Memory fields. */
     @ColumnInfo(name = "price_amount_micros") val priceAmountMicros: Long?,
     /** ISO 4217 currency, pairs with [priceAmountMicros]. */
     @ColumnInfo(name = "price_currency") val priceCurrency: String?,
@@ -47,7 +47,7 @@ data class MemoryItemEntity(
     @ColumnInfo(name = "ticket_code") val ticketCode: String?,
     @ColumnInfo(name = "ticket_seat") val ticketSeat: String?,
     @ColumnInfo(name = "ticket_gate") val ticketGate: String?,
-    /** Stable ordering within a card (extraction order). */
+    /** Stable ordering within a Memory (extraction order). */
     @ColumnInfo(name = "ordering") val ordering: Int = 0,
     /** Mutation timestamps (epoch millis, ADR-0003). */
     @ColumnInfo(name = "created_at") val createdAt: Long,

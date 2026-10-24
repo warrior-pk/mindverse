@@ -154,4 +154,43 @@ class CaptureIngestionDedupeTest {
             assertEquals(capture.createdAt, tombstoned.createdAt)
         }
     }
+
+    @Test
+    fun captureUpdateStampsUpdatedAtWithoutTouchingCreatedAt() {
+        runBlocking {
+            val db = TestDatabaseFactory.inMemoryDatabase(RuntimeEnvironment.getApplication())
+            val clock = FixedClock()
+            val service = CaptureIngestionService(db, clock)
+            val captureDao = db.captureDao()
+
+            val capture = (service.ingest(proposed(contentHash = "h9".repeat(32))) as IngestOutcome.Stored).capture
+            clock.advanceBy(7_000)
+            captureDao.update(capture.copy(deepLink = "https://example.com/updated", updatedAt = clock.millis))
+
+            val reloaded = captureDao.getCapture(capture.id)
+            assertNotNull(reloaded)
+            assertEquals("https://example.com/updated", reloaded!!.deepLink)
+            assertEquals(capture.createdAt, reloaded.createdAt)
+            assertEquals(clock.millis, reloaded.updatedAt)
+        }
+    }
+
+    @Test
+    fun contentHashMatchWinsOverPHashMatchOnDifferentRow() {
+        runBlocking {
+            val db = TestDatabaseFactory.inMemoryDatabase(RuntimeEnvironment.getApplication())
+            val clock = FixedClock()
+            val service = CaptureIngestionService(db, clock)
+
+            val rowA = (service.ingest(proposed(contentHash = "ha".repeat(32), phash = 0x1111L)) as IngestOutcome.Stored).capture
+            val rowB = (service.ingest(proposed(contentHash = "hb".repeat(32), phash = 0x2222L)) as IngestOutcome.Stored).capture
+
+            // Hash matches A, pHash matches B: the exact duplicate wins (silent skip).
+            val outcome = service.ingest(proposed(contentHash = "ha".repeat(32), phash = 0x2222L))
+            assertTrue(outcome is IngestOutcome.ExactDuplicate)
+            assertEquals(rowA.id, (outcome as IngestOutcome.ExactDuplicate).existing.id)
+            assertEquals(2, db.captureDao().countAll())
+            assertEquals(rowB.id, db.captureDao().findActiveByPHash(0x2222L)?.id)
+        }
+    }
 }
