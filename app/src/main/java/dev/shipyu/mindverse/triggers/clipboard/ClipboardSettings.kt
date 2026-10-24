@@ -1,4 +1,4 @@
-package dev.shipyu.mindverse.triggers.screenshot
+package dev.shipyu.mindverse.triggers.clipboard
 
 import android.content.Context
 import androidx.datastore.core.CorruptionException
@@ -19,10 +19,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
- * Screenshot-watcher preferences (ticket 05, spec R4-4): the watcher is prompt-first;
- * auto-ingest defaults OFF and only the user can turn it on.
+ * Clipboard auto-add preference: OFF by default (privacy-first — the clipboard
+ * often holds passwords). Only the user can turn it on, from the Privacy screen.
+ * Reads happen foreground-only (Brain open), so the system paste notice stays visible.
  */
-class WatcherSettings(
+class ClipboardSettings(
     context: Context,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
@@ -30,7 +31,7 @@ class WatcherSettings(
         context.preferencesDataStoreFile(FILE_NAME)
     }
 
-    val autoIngest: Flow<Boolean> = dataStore.data
+    val enabled: Flow<Boolean> = dataStore.data
         .catch { throwable ->
             if (throwable is IOException || throwable is CorruptionException) {
                 emit(emptyPreferences())
@@ -38,16 +39,16 @@ class WatcherSettings(
                 throw throwable
             }
         }
-        .map { it[KEY_AUTO_INGEST] ?: false }
+        .map { it[KEY_ENABLED] ?: false }
 
-    suspend fun setAutoIngest(enabled: Boolean) {
-        dataStore.edit { it[KEY_AUTO_INGEST] = enabled }
+    suspend fun setEnabled(value: Boolean) {
+        dataStore.edit { it[KEY_ENABLED] = value }
     }
 
-    suspend fun isAutoIngestEnabled(): Boolean = autoIngest.first()
+    suspend fun isEnabled(): Boolean = enabled.first()
 
     companion object {
-        private const val FILE_NAME = "watcher.preferences_pb"
-        private val KEY_AUTO_INGEST = booleanPreferencesKey("screenshot_auto_ingest")
+        private const val FILE_NAME = "clipboard.preferences_pb"
+        private val KEY_ENABLED = booleanPreferencesKey("clipboard_auto_add")
     }
 }

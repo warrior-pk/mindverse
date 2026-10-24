@@ -19,7 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shipyu.mindverse.privacy.PrivacyController
 import dev.shipyu.mindverse.privacy.PrivacyScreen
-import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
+import dev.shipyu.mindverse.triggers.clipboard.ClipboardSettings
 import dev.shipyu.mindverse.core.updates.UpdateController
 import dev.shipyu.mindverse.ui.ask.AskController
 import dev.shipyu.mindverse.ui.ask.AskScreen
@@ -51,7 +51,7 @@ fun MindverseNav(
     detailController: MemoryDetailController,
     reviewController: CaptureReviewController,
     privacyController: PrivacyController,
-    watcherSettings: WatcherSettings,
+    clipboardSettings: ClipboardSettings,
     updateController: UpdateController,
     versionName: String,
     versionCode: Int,
@@ -106,7 +106,7 @@ fun MindverseNav(
                     )
                     NavTab.PRIVACY -> PrivacyScreen(
                         controller = privacyController,
-                        watcherSettings = watcherSettings,
+                        clipboardSettings = clipboardSettings,
                     )
                     NavTab.SUPPORT -> SupportScreen(
                         updateController = updateController,

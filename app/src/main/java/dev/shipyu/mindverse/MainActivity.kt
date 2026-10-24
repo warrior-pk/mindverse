@@ -1,6 +1,5 @@
 package dev.shipyu.mindverse
 
-import android.app.Activity.ScreenCaptureCallback
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,28 +10,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.shipyu.mindverse.core.updates.UpdateController
 import dev.shipyu.mindverse.firstrun.FirstRunController
 import dev.shipyu.mindverse.firstrun.FirstRunScreen
 import dev.shipyu.mindverse.privacy.PrivacyController
-import dev.shipyu.mindverse.triggers.screenshot.ScreenshotIngestHandler
-import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
+import dev.shipyu.mindverse.triggers.clipboard.ClipboardSettings
 import dev.shipyu.mindverse.ui.captures.CaptureReviewController
 import dev.shipyu.mindverse.ui.detail.MemoryDetailController
 import dev.shipyu.mindverse.ui.gallery.GalleryController
 import dev.shipyu.mindverse.ui.ask.AskController
 import dev.shipyu.mindverse.ui.nav.MindverseNav
 import javax.inject.Inject
-import kotlinx.coroutines.launch
 
 /**
- * Composition root (tickets 06/08): first-run onboarding gate, the nav shell
- * (Gallery / Ask / Privacy / Support), deep-link routing (`mindverse://memory/<id>`,
- * `mindverse://capture/<id>`), the cold-start update check (debounced 24h), and host of
- * the screenshot watcher's `ScreenCaptureCallback` (ticket 05) — that API only reports
- * screenshots while the app is visible, so registration follows the activity lifecycle.
+ * Composition root: first-run onboarding gate, the nav shell
+ * (Brain / Ask / Privacy / Support), deep-link routing (`mindverse://memory/<id>`,
+ * `mindverse://capture/<id>`), and the cold-start update check (debounced 24h).
+ * Ingest is explicit-share only (privacy-first): Share sheet, clipboard auto-add
+ * (opt-in, foreground-only), QS tile opens the dashboard.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,14 +38,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var askController: AskController
     @Inject lateinit var memoryDetailController: MemoryDetailController
     @Inject lateinit var captureReviewController: CaptureReviewController
-    @Inject lateinit var screenshotHandler: ScreenshotIngestHandler
-    @Inject lateinit var watcherSettings: WatcherSettings
+    @Inject lateinit var clipboardSettings: ClipboardSettings
     @Inject lateinit var firstRunController: FirstRunController
     @Inject lateinit var updateController: UpdateController
-
-    private val screenCaptureCallback = ScreenCaptureCallback {
-        lifecycleScope.launch { screenshotHandler.onScreenshotDetected() }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,7 +66,7 @@ class MainActivity : ComponentActivity() {
                         detailController = memoryDetailController,
                         reviewController = captureReviewController,
                         privacyController = privacyController,
-                        watcherSettings = watcherSettings,
+                        clipboardSettings = clipboardSettings,
                         updateController = updateController,
                         versionName = BuildConfig.VERSION_NAME,
                         versionCode = BuildConfig.VERSION_CODE,
@@ -92,20 +83,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        registerScreenCaptureCallback(mainExecutor, screenCaptureCallback)
-    }
-
-    override fun onStop() {
-        unregisterScreenCaptureCallback(screenCaptureCallback)
-        super.onStop()
-    }
-
     companion object {
         /**
          * Deep links (spec R4-7): `mindverse://memory/<id>` → Memory detail,
-         * `mindverse://capture/<id>` → Capture review sheet; anything else → Gallery.
+         * `mindverse://capture/<id>` → Capture review sheet; anything else → Brain.
          */
         fun deepLinkRoute(intent: Intent?): Pair<String?, String?> {
             val data = intent?.data ?: return null to null

@@ -35,9 +35,9 @@ import kotlinx.coroutines.launch
 private enum class FirstRunStep { WELCOME, PERMISSIONS, PRIVACY, KEY }
 
 /**
- * First-run flow (ticket 08): four steps, skippable key entry, and only the two
- * permissions M1 actually needs — notifications (processing chip + watcher prompt) and
- * media read (screenshot watcher). No over-permissioning.
+ * First-run flow: three steps, skippable key entry, and only the one permission
+ * M1 actually needs — notifications (processing chip). No media permissions:
+ * ingest is explicit-share only (privacy-first).
  */
 @Composable
 fun FirstRunScreen(
@@ -67,7 +67,7 @@ fun FirstRunScreen(
                     Text(text = "Welcome to Mindverse", style = MaterialTheme.typography.headlineMedium)
                     Text(
                         text = "Your local second brain. Mindverse captures what you share " +
-                            "into it — links, images, screenshots — turns each item into a " +
+                            "into it — links, images, docs, texts — turns each item into a " +
                             "structured Memory, and keeps everything searchable on this device.",
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -95,15 +95,15 @@ fun FirstRunScreen(
                 }
 
                 FirstRunStep.PERMISSIONS -> {
-                    Text(text = "Two permissions, both optional", style = MaterialTheme.typography.headlineSmall)
+                    Text(text = "One permission, optional", style = MaterialTheme.typography.headlineSmall)
                     PermissionRow(
                         title = "Notifications",
-                        body = "Shows the processing chip and the “Add to Mindverse?” screenshot prompt.",
+                        body = "Shows the processing chip while a Capture becomes a Memory.",
                     )
                     PermissionRow(
-                        title = "Photos & videos",
-                        body = "Lets the screenshot watcher save the screenshot you just took. " +
-                            "Mindverse never browses your gallery.",
+                        title = "Clipboard (optional, off by default)",
+                        body = "Only if you turn on Clipboard auto-add in Privacy: Brain " +
+                            "saves new clipboard text when opened (foreground only).",
                     )
                     Spacer(Modifier.height(8.dp))
                     Button(
@@ -111,14 +111,13 @@ fun FirstRunScreen(
                             permissionLauncher.launch(
                                 arrayOf(
                                     "android.permission.POST_NOTIFICATIONS",
-                                    "android.permission.READ_MEDIA_IMAGES",
                                 ),
                             )
                             step = FirstRunStep.PRIVACY
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Ask for permissions")
+                        Text("Ask for permission")
                     }
                     TextButton(
                         onClick = { step = FirstRunStep.PRIVACY },

@@ -39,9 +39,9 @@ object UiModule {
         clock: Clock,
         zone: ZoneId,
         @Named("ui") scope: CoroutineScope,
-        importer: dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter,
-        watcherSettings: dev.shipyu.mindverse.triggers.screenshot.WatcherSettings,
-    ): GalleryController = GalleryController(db, repository, clock, zone, scope, importer, watcherSettings)
+        clipboard: dev.shipyu.mindverse.triggers.clipboard.ClipboardImporter,
+        clipboardSettings: dev.shipyu.mindverse.triggers.clipboard.ClipboardSettings,
+    ): GalleryController = GalleryController(db, repository, clock, zone, scope, clipboard, clipboardSettings)
 
     @Provides
     @Singleton

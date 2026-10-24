@@ -8,19 +8,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.shipyu.mindverse.core.data.ingest.CaptureBlobStore
 import dev.shipyu.mindverse.core.pipeline.PipelineController
-import dev.shipyu.mindverse.triggers.screenshot.ContentResolverScreenshotReader
-import dev.shipyu.mindverse.triggers.screenshot.MediaStoreScreenshotSource
-import dev.shipyu.mindverse.triggers.screenshot.NotificationScreenshotPrompt
-import dev.shipyu.mindverse.triggers.screenshot.ScreenshotIngestHandler
-import dev.shipyu.mindverse.triggers.screenshot.ScreenshotPrompt
-import dev.shipyu.mindverse.triggers.screenshot.ScreenshotReader
-import dev.shipyu.mindverse.triggers.screenshot.ScreenshotSource
-import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
+import dev.shipyu.mindverse.triggers.clipboard.ClipboardImporter
+import dev.shipyu.mindverse.triggers.clipboard.ClipboardSettings
 import dev.shipyu.mindverse.triggers.share.ShareIntentIngest
 import java.time.Clock
 import javax.inject.Singleton
 
-/** M1 trigger wiring (ticket 05): share sheet, screenshot watcher, tile has no deps. */
+/** M1 trigger wiring: share sheet, tile (no deps), clipboard auto-add (opt-in). */
 @Module
 @InstallIn(SingletonComponent::class)
 object TriggersModule {
@@ -41,53 +35,15 @@ object TriggersModule {
 
     @Provides
     @Singleton
-    fun watcherSettings(@ApplicationContext context: Context): WatcherSettings =
-        WatcherSettings(context)
+    fun clipboardSettings(@ApplicationContext context: Context): ClipboardSettings =
+        ClipboardSettings(context)
 
     @Provides
     @Singleton
-    fun screenshotSource(
-        @ApplicationContext context: Context,
-        clock: Clock,
-    ): ScreenshotSource = MediaStoreScreenshotSource(context, clock)
-
-    @Provides
-    @Singleton
-    fun screenshotReader(@ApplicationContext context: Context): ScreenshotReader =
-        ContentResolverScreenshotReader(context)
-
-    @Provides
-    @Singleton
-    fun screenshotPrompt(@ApplicationContext context: Context): ScreenshotPrompt =
-        NotificationScreenshotPrompt(context)
-
-    @Provides
-    @Singleton
-    fun screenshotIngestHandler(
-        blobs: CaptureBlobStore,
-        controller: PipelineController,
-        source: ScreenshotSource,
-        reader: ScreenshotReader,
-        settings: WatcherSettings,
-        prompt: ScreenshotPrompt,
-        clock: Clock,
-    ): ScreenshotIngestHandler = ScreenshotIngestHandler(
-        blobs = blobs,
-        controller = controller,
-        source = source,
-        reader = reader,
-        settings = settings,
-        prompt = prompt,
-        clock = clock,
-    )
-
-    @Provides
-    @Singleton
-    fun screenshotImporter(
+    fun clipboardImporter(
         @ApplicationContext context: Context,
         blobs: CaptureBlobStore,
         controller: PipelineController,
         clock: Clock,
-    ): dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter =
-        dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter(context, blobs, controller, clock)
+    ): ClipboardImporter = ClipboardImporter(context, blobs, controller, clock)
 }

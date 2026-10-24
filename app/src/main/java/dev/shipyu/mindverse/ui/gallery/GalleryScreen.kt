@@ -26,10 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,31 +60,6 @@ fun GalleryScreen(
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
                 Text(text = "Brain", style = MaterialTheme.typography.headlineSmall)
-            }
-            item(span = StaggeredGridItemSpan.FullLine) {
-                var importing by remember { mutableStateOf(false) }
-                var importMsg by remember { mutableStateOf<String?>(null) }
-                Column {
-                    TextButton(
-                        onClick = {
-                            scope.launch {
-                                importing = true
-                                importMsg = controller.importScreenshots()
-                                importing = false
-                            }
-                        },
-                        enabled = !importing,
-                    ) {
-                        Text(if (importing) "…" else "Import")
-                    }
-                    importMsg?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
             }
 
             if (state.nearDups.isNotEmpty()) {
@@ -253,7 +225,7 @@ private fun EmptyState(hasFilters: Boolean) {
             text = if (hasFilters) {
                 "Clear the filters."
             } else {
-                "Share or screenshot — it lands here."
+                "Share into Mindverse — it lands here."
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

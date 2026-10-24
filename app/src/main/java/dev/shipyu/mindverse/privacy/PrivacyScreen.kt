@@ -32,7 +32,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import dev.shipyu.mindverse.core.data.db.EgressOutcome
-import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
+import dev.shipyu.mindverse.triggers.clipboard.ClipboardSettings
 
 /**
  * Privacy screen (ticket 03 — the only UI in this issue; spec R5-1): chronological
@@ -43,10 +43,10 @@ import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
 fun PrivacyScreen(
     controller: PrivacyController,
     modifier: Modifier = Modifier,
-    watcherSettings: WatcherSettings? = null,
+    clipboardSettings: ClipboardSettings? = null,
 ) {
     val state by controller.state.collectAsStateWithLifecycle(initialValue = PrivacyUiState.idle())
-    val autoIngest by (watcherSettings?.autoIngest ?: kotlinx.coroutines.flow.flowOf(false))
+    val clipboardOn by (clipboardSettings?.enabled ?: kotlinx.coroutines.flow.flowOf(false))
         .collectAsStateWithLifecycle(initialValue = false)
     val zone = ZoneId.systemDefault()
     val scope = rememberCoroutineScope()
@@ -66,20 +66,20 @@ fun PrivacyScreen(
                     onToggle = { checked -> scope.launch { controller.setFeatureEnabled(feature, checked) } },
                 )
             }
-            if (watcherSettings != null) {
+            if (clipboardSettings != null) {
                 item {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Screenshot watcher",
+                        text = "Clipboard",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     FeatureToggleRow(
-                        featureLabel = "Auto-add screenshots",
-                        reasonLabel = "Off: Mindverse asks before saving a screenshot. " +
-                            "On: screenshots go straight into the pipeline.",
-                        enabled = autoIngest,
-                        onToggle = { checked -> scope.launch { watcherSettings.setAutoIngest(checked) } },
+                        featureLabel = "Clipboard auto-add",
+                        reasonLabel = "Off by default. On: Brain saves new clipboard text " +
+                            "when opened (foreground only). Turn off before copying passwords.",
+                        enabled = clipboardOn,
+                        onToggle = { checked -> scope.launch { clipboardSettings.setEnabled(checked) } },
                     )
                 }
             }
