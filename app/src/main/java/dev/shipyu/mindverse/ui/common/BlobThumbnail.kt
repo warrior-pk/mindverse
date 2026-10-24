@@ -13,29 +13,43 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 
 /**
- * Thumbnail for a capture blob (ticket 06). Decoded off the main thread and
- * downscaled aggressively (512px max) so masonry scrolling stays smooth;
- * unreadable/missing blobs degrade to the placeholder rather than crashing.
+ * Thumbnail for a capture blob (ticket 06). Decoded off the main thread,
+ * cached in memory, downscaled to ~384px max in RGB_565 so masonry scrolling
+ * stays smooth; unreadable/missing blobs show the placeholder.
  */
+private object ThumbnailCache : android.util.LruCache<String, android.graphics.Bitmap>(48) {
+    override fun sizeOf(key: String, value: android.graphics.Bitmap): Int =
+        value.byteCount / 1024
+}
+
 @Composable
 fun BlobThumbnail(path: String?, modifier: Modifier = Modifier, placeholder: String = "No image") {
     val bitmap = androidx.compose.runtime.produceState<android.graphics.Bitmap?>(
-        initialValue = null,
+        initialValue = ThumbnailCache.get(path ?: ""),
         key1 = path,
     ) {
-        value = path?.let {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                runCatching {
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeFile(it, bounds)
-                    val maxDim = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
-                    var sample = 1
-                    while (maxDim / sample > 512) sample *= 2
-                    BitmapFactory.decodeFile(
-                        it,
-                        BitmapFactory.Options().apply { inSampleSize = sample },
-                    )
-                }.getOrNull()
+        if (path == null) {
+            value = null
+        } else {
+            ThumbnailCache.get(path)?.let {
+                value = it
+            } ?: run {
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching {
+                        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeFile(path, bounds)
+                        val maxDim = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+                        var sample = 1
+                        while (maxDim / sample > 384) sample *= 2
+                        BitmapFactory.decodeFile(
+                            path,
+                            BitmapFactory.Options().apply {
+                                inSampleSize = sample
+                                inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
+                            },
+                        )?.also { ThumbnailCache.put(path, it) }
+                    }.getOrNull()
+                }
             }
         }
     }.value
