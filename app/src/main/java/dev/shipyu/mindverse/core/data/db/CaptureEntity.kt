@@ -40,6 +40,12 @@ data class CaptureEntity(
     @ColumnInfo(name = "content_hash") val contentHash: String,
     /** Perceptual hash of the visual content (screenshot blobs), null when not applicable. */
     val phash: Long?,
+    /**
+     * MIME type of the stored blob (ticket 04 routing: image MIME types → vision
+     * extraction, text/null → text extraction, `application/pdf` → document input).
+     * Null when the trigger could not determine it (best-effort source context).
+     */
+    @ColumnInfo(name = "mime_type") val mimeType: String? = null,
     /** When the content itself was captured (epoch millis), distinct from ingestion time. */
     @ColumnInfo(name = "captured_at") val capturedAt: Long,
     /** Mutation timestamp (epoch millis, ADR-0003); stamped at insert and on update/tombstone. */
@@ -52,4 +58,15 @@ data class CaptureEntity(
      * the upstream merge prompt resolves this later. Null for unique captures.
      */
     @ColumnInfo(name = "near_duplicate_of") val nearDuplicateOf: String? = null,
+    /**
+     * Pipeline lifecycle (ticket 04). Null on pre-v3 rows; new captures start [CaptureProcessingState.PENDING]
+     * before the extract job is enqueued.
+     */
+    @ColumnInfo(name = "processing_state") val processingState: CaptureProcessingState? = null,
+    /** Attempts made by the current stage (visible in the dead-letter surface). */
+    @ColumnInfo(name = "processing_attempts", defaultValue = "0") val processingAttempts: Int = 0,
+    /** Last failure reason (typed, human-readable) for a dead-lettered Capture. */
+    @ColumnInfo(name = "processing_error") val processingError: String? = null,
+    /** Memory produced by extraction; the chip deep-link and embed job resolve through it. */
+    @ColumnInfo(name = "memory_id") val memoryId: String? = null,
 )

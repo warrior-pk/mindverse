@@ -82,6 +82,10 @@ class MemoryRepository(
 
     suspend fun listActive(): List<MemoryEntity> = db.memoryDao().listActive()
 
+    /** Extraction idempotency lookup (see [MemoryDao.findActiveBySourceCapture]). */
+    suspend fun memoryForCapture(captureId: String): MemoryEntity? =
+        db.memoryDao().findActiveBySourceCapture(captureId)
+
     /** Full-Memory update: stamps updatedAt, keeps createdAt; optional re-embedding. */
     suspend fun updateMemory(memory: MemoryEntity, newEmbedding: FloatArray? = null) {
         val now = clock.millis()

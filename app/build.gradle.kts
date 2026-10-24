@@ -18,8 +18,8 @@ android {
         applicationId = "dev.shipyu.mindverse"
         minSdk = 34
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.3.2"
+        versionCode = 7
+        versionName = "0.4.0"
     }
 
     lint {
@@ -123,11 +123,19 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
+    // Processing pipeline (issue 04): WorkManager jobs with Hilt injection; notifications
+    // carry the processing chip (NotificationCompat via androidx.core).
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+    implementation(libs.androidx.core.ktx)
+
     // Tests
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockwebserver3)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.work.testing)
 }
 
 ksp {

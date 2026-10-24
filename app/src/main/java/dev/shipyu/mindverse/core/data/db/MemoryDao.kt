@@ -31,6 +31,14 @@ interface MemoryDao {
     @Query("SELECT * FROM memory WHERE deleted = 0 ORDER BY updated_at DESC")
     suspend fun listActive(): List<MemoryEntity>
 
+    /**
+     * Extraction idempotency: find the Memory already derived from a Capture (crash between
+     * memory insert and capture.memoryId stamp). UUIDs cannot collide as substrings, and the
+     * list converter is newline-joined, so a LIKE probe is safe for v1.
+     */
+    @Query("SELECT * FROM memory WHERE deleted = 0 AND source_capture_ids LIKE '%' || :captureId || '%' LIMIT 1")
+    suspend fun findActiveBySourceCapture(captureId: String): MemoryEntity?
+
     /** Tombstone (ADR-0003): flag deleted, stamp mutation time; row is retained. */
     @Query("UPDATE memory SET deleted = 1, updated_at = :now WHERE id = :id")
     suspend fun tombstone(id: String, now: Long)

@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Ticket 03: provider transports (Gemini / OpenAI-compatible) reach the network
          only through the egress chokepoint; no other outbound call exists in the app. -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Ticket 04: processing chip notification + expedited-work foreground service. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
 
     <application
         android:name=".MindverseApp"
@@ -14,12 +21,40 @@
         android:label="Mindverse"
         android:theme="@style/Theme.Mindverse">
 
+        <!-- Ticket 04: WorkManager initializes on demand from MindverseApp's
+             Configuration.Provider (HiltWorkerFactory); the startup initializer must not
+             win the race with a default factory. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!-- Expedited work promotes to a foreground service; declare the types used by
+             PipelineForeground (dataSync on API 34, mediaProcessing on 35+). -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync|mediaProcessing"
+            tools:node="merge" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Deep links (spec R4-7): processing chip → memory, ticket 06 nav surfaces. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mindverse" />
             </intent-filter>
         </activity>
     </application>

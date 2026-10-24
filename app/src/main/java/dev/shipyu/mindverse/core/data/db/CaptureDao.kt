@@ -41,4 +41,36 @@ interface CaptureDao {
 
     @Query("SELECT COUNT(*) FROM captures")
     suspend fun countAll(): Int
+
+    /** Dead-lettered captures (visible in-app per ticket 04); newest failure first. */
+    @Query("SELECT * FROM captures WHERE processing_state = 'DEAD_LETTER' AND deleted = 0 ORDER BY updated_at DESC")
+    suspend fun listDeadLettered(): List<CaptureEntity>
+
+    /** Captures waiting for the extract job. */
+    @Query("SELECT * FROM captures WHERE processing_state = 'PENDING' AND deleted = 0 ORDER BY captured_at ASC")
+    suspend fun listPending(): List<CaptureEntity>
+
+    /**
+     * Pipeline state transition (ticket 04). [processingError] is cleared on progress and
+     * set on dead-letter; [processingAttempts] mirrors the worker's run attempt count.
+     */
+    @Query(
+        "UPDATE captures SET processing_state = :state, processing_attempts = :attempts, " +
+            "processing_error = :error, updated_at = :now WHERE id = :id",
+    )
+    suspend fun setProcessingState(
+        id: String,
+        state: CaptureProcessingState,
+        attempts: Int,
+        error: String?,
+        now: Long,
+    )
+
+    /** Extraction output linkage; the embed stage resolves its Memory through this. */
+    @Query("UPDATE captures SET memory_id = :memoryId, updated_at = :now WHERE id = :id")
+    suspend fun setMemoryId(id: String, memoryId: String, now: Long)
+
+    /** Embed is idempotent; a re-run after process death skips already-created Memories. */
+    @Query("SELECT * FROM captures WHERE memory_id = :memoryId LIMIT 1")
+    suspend fun findByMemoryId(memoryId: String): CaptureEntity?
 }

@@ -2,6 +2,7 @@ package dev.shipyu.mindverse.core.data.ingest
 
 import dev.shipyu.mindverse.core.data.db.CaptureEntity
 import dev.shipyu.mindverse.core.data.db.CaptureKind
+import dev.shipyu.mindverse.core.data.db.CaptureProcessingState
 import dev.shipyu.mindverse.core.data.db.MindverseDatabase
 import java.time.Clock
 import java.util.UUID
@@ -19,6 +20,8 @@ data class ProposedCapture(
     val contentHash: String,
     val phash: Long?,
     val capturedAt: Long,
+    /** MIME type of the stored blob when known (ticket 04 extraction routing). */
+    val mimeType: String? = null,
 )
 
 /**
@@ -68,6 +71,8 @@ class CaptureIngestionService(
                 contentHash = proposed.contentHash,
                 phash = proposed.phash,
                 capturedAt = proposed.capturedAt,
+                mimeType = proposed.mimeType,
+                processingState = CaptureProcessingState.PENDING,
                 createdAt = now,
                 updatedAt = now,
                 deleted = false,
