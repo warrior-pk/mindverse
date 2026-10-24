@@ -25,7 +25,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,6 +60,31 @@ fun GalleryScreen(
         ) {
             item {
                 Text(text = "Memories", style = MaterialTheme.typography.headlineSmall)
+            }
+            item {
+                var importing by remember { mutableStateOf(false) }
+                var importMsg by remember { mutableStateOf<String?>(null) }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                importing = true
+                                importMsg = controller.importScreenshots()
+                                importing = false
+                            }
+                        },
+                        enabled = !importing,
+                    ) {
+                        Text(if (importing) "Importing…" else "Import Screenshots")
+                    }
+                    importMsg?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
 
             if (state.nearDups.isNotEmpty()) {

@@ -80,4 +80,14 @@ object TriggersModule {
         prompt = prompt,
         clock = clock,
     )
+
+    @Provides
+    @Singleton
+    fun screenshotImporter(
+        @ApplicationContext context: Context,
+        blobs: CaptureBlobStore,
+        controller: PipelineController,
+        clock: Clock,
+    ): dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter =
+        dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter(context, blobs, controller, clock)
 }

@@ -24,6 +24,7 @@ class GalleryController(
     private val clock: Clock,
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val scope: CoroutineScope,
+    private val importer: dev.shipyu.mindverse.triggers.screenshot.ScreenshotImporter? = null,
 ) {
     private val _state = MutableStateFlow(GalleryState())
     val state: StateFlow<GalleryState> = _state.asStateFlow()
@@ -88,6 +89,18 @@ class GalleryController(
         capture.memoryId?.let { repository.tombstoneMemory(it) }
         db.captureDao().tombstone(captureId, clock.millis())
         refresh()
+    }
+
+    /** Screenshots Import (M1 slice): user-tapped, album-scoped, dedupe-safe. */
+    suspend fun importScreenshots(limit: Int = 20): String {
+        val imp = importer ?: return "Import unavailable"
+        val result = imp.importLatest(limit)
+        refresh()
+        return if (result.imported == 0 && result.skipped > 0) {
+            "Already up to date (${result.skipped} skipped)"
+        } else {
+            "Imported ${result.imported} screenshot(s)"
+        }
     }
 
     private fun applyFilters() {
