@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +8,16 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+}
+
+/**
+ * Release signing (ticket 08): read from the human-owned gitignored `keystore.properties`
+ * at the repo root (keys `storeFile` / `storePassword` / `keyAlias` / `keyPassword`).
+ * Absent file → the release build is unsigned but still builds and lints.
+ */
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
 }
 
 android {
@@ -18,8 +29,8 @@ android {
         applicationId = "dev.shipyu.mindverse"
         minSdk = 34
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.4.0"
+        versionCode = 8
+        versionName = "0.5.0"
     }
 
     lint {
@@ -44,6 +55,10 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Ticket 08: release signing is supplied by the human-owned keystore via a
+            // gitignored `keystore.properties` (see the ticket for the keytool recipe).
+            // Absent file → unsigned release build (still buildable/testable).
+            signingConfig = signingConfigs.findByName("release")
         }
         debug {
             isMinifyEnabled = false
@@ -57,6 +72,17 @@ android {
         }
         create("fdroid") {
             dimension = "distribution"
+        }
+    }
+
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
     }
 

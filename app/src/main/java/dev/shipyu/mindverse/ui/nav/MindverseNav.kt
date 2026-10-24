@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shipyu.mindverse.privacy.PrivacyController
 import dev.shipyu.mindverse.privacy.PrivacyScreen
 import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
+import dev.shipyu.mindverse.core.updates.UpdateController
 import dev.shipyu.mindverse.ui.ask.AskController
 import dev.shipyu.mindverse.ui.ask.AskScreen
 import dev.shipyu.mindverse.ui.captures.CaptureReviewController
@@ -51,6 +52,9 @@ fun MindverseNav(
     reviewController: CaptureReviewController,
     privacyController: PrivacyController,
     watcherSettings: WatcherSettings,
+    updateController: UpdateController,
+    versionName: String,
+    versionCode: Int,
     initialMemoryId: String? = null,
     initialCaptureId: String? = null,
 ) {
@@ -103,7 +107,11 @@ fun MindverseNav(
                         controller = privacyController,
                         watcherSettings = watcherSettings,
                     )
-                    NavTab.SUPPORT -> SupportPlaceholderScreen()
+                    NavTab.SUPPORT -> SupportPlaceholderScreen(
+                        updateController = updateController,
+                        versionName = versionName,
+                        versionCode = versionCode,
+                    )
                 }
             }
         }

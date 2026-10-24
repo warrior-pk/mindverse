@@ -1,9 +1,9 @@
 # 09 — Support screen: UPI (India) + GitHub Sponsors (global)
 
-Status: needs-info
+Status: ready-for-agent
 Blocked by: 06
 Spec: .scratch/mindverse-v1/spec.md (Support screen)
-Missing info: the owner's real UPI VPA — build ahead using the `REPLACE-ME-VPA` constant (single `BuildConfig`/const), then fill when the owner provides it. Status flips to `ready-for-agent` once the VPA lands or the owner approves the placeholder path.
+Missing info: none — owner provided the real UPI VPA (`piyu8h@slc`) on 2026-10-25; it replaces `REPLACE-ME-VPA` in the single constant.
 
 ## Body
 
