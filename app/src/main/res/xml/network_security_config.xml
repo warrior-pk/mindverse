@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ticket 03: remote egress (Gemini AI Studio, OpenRouter, DeepSeek, …) is always TLS.
+  Cleartext is permitted only for local model servers (Ollama / LM Studio running on
+  this device), reachable as localhost/127.0.0.1 — nothing else may be plain HTTP.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

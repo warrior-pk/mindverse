@@ -1,0 +1,24 @@
+# PII masking snapshot corpus (ticket 03; PiiMaskerSnapshotCorpusTest).
+# Tab-separated records: input<TAB>expected-classes<TAB>masked-output.
+# expected-classes: comma-separated PayloadClass names, or "-" for none.
+# Lines starting with '#' and blank lines are ignored. Tabs never appear inside text.
+mail me sam.work+news@example.co.in ok	email	mail me <email> ok
+reply to Priya r.sharma92@corp.example.org tonight	email	reply to Priya <email> tonight
+card 4242 4242 4242 4242 on file	card	card <card> on file
+bill the 5555-5555-5555-4444 line	card	bill the <card> line
+Aadhaar 2345 2345 2345 verified	id	Aadhaar <id> verified
+PAN ABCDE1234F filed with form	id	PAN <id> filed with form
+track 1234 5678 9012 3456 parcel	-	track 1234 5678 9012 3456 parcel
+Your OTP is 483920 to confirm	otp	Your OTP is <otp> to confirm
+verify code: 5591 expires soon	otp	verify code: <otp> expires soon
+call +91 98765 43210 tonight	phone	call <phone> tonight
+office (022) 1234-5678 afternoons	phone	office <phone> afternoons
+me at 98765 43210 please	phone	me at <phone> please
+cost 2499 only	-	cost 2499 only
+order 1200.50 paid	-	order 1200.50 paid
+year 2026 plan renewal	-	year 2026 plan renewal
+speed 100 Mbps fibre	-	speed 100 Mbps fibre
+invoice 1435 7689 overdue	phone	invoice <phone> overdue
+pin 4242 set successfully	otp	pin <otp> set successfully
+483920 is your OTP now	otp	<otp> is your OTP now
+Sam 91234 56780 sam123@mail.io then 4567 8912 3456 7890 done	phone,email	Sam <phone> <email> then 4567 8912 3456 7890 done

@@ -1,6 +1,7 @@
 package dev.shipyu.mindverse.core.data.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -28,15 +29,17 @@ import java.io.File
  *   version (no entity migration required when index shape evolves).
  */
 @Database(
-    entities = [CaptureEntity::class, MemoryEntity::class, MemoryItemEntity::class],
-    version = 1,
+    entities = [CaptureEntity::class, MemoryEntity::class, MemoryItemEntity::class, EgressLogEntity::class],
+    version = 2,
     exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 @TypeConverters(ListConverters::class)
 abstract class MindverseDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun memoryDao(): MemoryDao
     abstract fun memoryItemDao(): MemoryItemDao
+    abstract fun egressLogDao(): EgressLogDao
 
     /**
      * Write one chunk-vector for [memoryId] (v1: exactly one row per Memory; CHUNK-READY

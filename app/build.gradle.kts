@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -17,8 +18,8 @@ android {
         applicationId = "dev.shipyu.mindverse"
         minSdk = 34
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.2.1"
+        versionCode = 4
+        versionName = "0.3.0"
     }
 
     lint {
@@ -106,12 +107,18 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
+    // Provider transports (issue 03): HTTP + JSON for Gemini / OpenAI-compatible,
+    // reached only through core.egress's chokepoint API.
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
     // Tests
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockwebserver3)
     testImplementation(libs.robolectric)
 }
 
