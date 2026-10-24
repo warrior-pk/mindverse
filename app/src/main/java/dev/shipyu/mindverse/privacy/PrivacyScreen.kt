@@ -32,6 +32,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import dev.shipyu.mindverse.core.data.db.EgressOutcome
+import dev.shipyu.mindverse.triggers.screenshot.WatcherSettings
 
 /**
  * Privacy screen (ticket 03 — the only UI in this issue; spec R5-1): chronological
@@ -41,9 +42,12 @@ import dev.shipyu.mindverse.core.data.db.EgressOutcome
 @Composable
 fun PrivacyScreen(
     controller: PrivacyController,
+    watcherSettings: WatcherSettings? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsStateWithLifecycle(initialValue = PrivacyUiState.idle())
+    val autoIngest by (watcherSettings?.autoIngest ?: kotlinx.coroutines.flow.flowOf(false))
+        .collectAsStateWithLifecycle(initialValue = false)
     val zone = ZoneId.systemDefault()
     val scope = rememberCoroutineScope()
 
@@ -61,6 +65,23 @@ fun PrivacyScreen(
                     enabled = enabled,
                     onToggle = { checked -> scope.launch { controller.setFeatureEnabled(feature, checked) } },
                 )
+            }
+            if (watcherSettings != null) {
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Screenshot watcher",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    FeatureToggleRow(
+                        featureLabel = "Auto-add screenshots",
+                        reasonLabel = "Off: Mindverse asks before saving a screenshot. " +
+                            "On: screenshots go straight into the pipeline.",
+                        enabled = autoIngest,
+                        onToggle = { checked -> scope.launch { watcherSettings.setAutoIngest(checked) } },
+                    )
+                }
             }
             item { Spacer(Modifier.height(8.dp)) }
             if (state.days.isEmpty()) {

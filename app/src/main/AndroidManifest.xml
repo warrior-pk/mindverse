@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
 
+    <!-- Ticket 05: the screenshot watcher reads the latest screenshot row from MediaStore
+         after a ScreenCaptureCallback event (the callback itself needs no permission). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
     <application
         android:name=".MindverseApp"
         android:allowBackup="false"
@@ -57,5 +61,43 @@
                 <data android:scheme="mindverse" />
             </intent-filter>
         </activity>
+
+        <!-- Ticket 05: Share-sheet trampoline. Text, images, PDFs; no permissions beyond
+             the intent itself (blobs are copied into app-private storage). -->
+        <activity
+            android:name=".triggers.share.ShareReceiverActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+
+        <!-- Ticket 05: Quick Settings tile (M1: opens the dashboard). -->
+        <service
+            android:name=".triggers.tile.MindverseTileService"
+            android:exported="true"
+            android:icon="@android:drawable/ic_menu_compass"
+            android:label="Mindverse"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Ticket 05: "Add to Mindverse?" accept action for the screenshot watcher. -->
+        <receiver
+            android:name=".triggers.screenshot.ScreenshotPromptReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="dev.shipyu.mindverse.action.ACCEPT_SCREENSHOT" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

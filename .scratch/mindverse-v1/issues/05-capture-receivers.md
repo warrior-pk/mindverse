@@ -1,6 +1,6 @@
 # 05 — Capture receivers: Share sheet + QSTile + screenshot watcher
 
-Status: ready-for-agent
+Status: resolved
 Spec: .scratch/mindverse-v1/spec.md (Triggers rows, M1 scope)
 
 ## Body
@@ -15,3 +15,27 @@ Implement the three M1 triggers; all funnel into the same pipeline entry (issue 
 
 ## Accepted when
 Each trigger produces a Capture row end-to-end on an emulator; watcher respects default prompt mode.
+
+## Comments
+
+- 2026-10-25 (implemented): triggers live in `dev.shipyu.mindverse.triggers` (share /
+  tile / screenshot) with shared helpers in `core/data/ingest` (`CaptureBlobStore` —
+  app-private blob storage + SHA-256 content hash; `ImageFingerprint` — dHash perceptual
+  hash for near-dup detection).
+  - **Share**: `ShareReceiverActivity` trampoline (text / image / PDF ACTION_SEND).
+    Best-effort source context: referrer → sourceApp, first http(s) URL in shared text →
+    deepLink, MIME from resolver/type; missing pieces degrade to nulls. Text shares are
+    stored as UTF-8 blobs so extraction reads them back. Dedupe drops exact dupes silently.
+  - **Tile**: `MindverseTileService` opens the dashboard via
+    `startActivityAndCollapse(PendingIntent)` (collapses the shade; API 34+).
+  - **Watcher**: `ScreenCaptureCallback` registered with the activity lifecycle (the API
+    only reports screenshots while the app is visible — accepted per spec R2-4). The
+    callback carries no bitmap, so `MediaStoreScreenshotSource` looks up the newest
+    Screenshots row (READ_MEDIA_IMAGES; silent no-op without the grant — ticket 08's
+    first-run flow requests it). Prompt-first: "Add to Mindverse?" notification with a
+    one-tap accept broadcast; auto-ingest defaults OFF (`WatcherSettings` DataStore,
+    toggle surfaced on the Privacy screen until ticket 06 restructures nav).
+  - Tests: `ShareIntentIngestTest` (text/image/pdf classification, URL trim, dedupe,
+    empty degrade), `ScreenshotIngestHandlerTest` (prompt-first default, auto-ingest
+    skip, missing screenshot no-op), `ImageFingerprintTest` (dHash stability, unreadable
+    → null; native graphics mode). Full suite green on both flavors.
